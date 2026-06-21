@@ -686,6 +686,19 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
 /* --- ピック画面ちらつき対策 --- */
 .pick-stage{will-change:auto}
 .pick-stage .pick-card .back{backface-visibility:hidden;transform:translateZ(0)}
+
+/* --- ピック候補選択UI --- */
+.pick-target-panel{margin-top:10px;display:grid;gap:10px}
+.pick-target-cards{display:flex;gap:8px;overflow-x:auto;padding:12px 4px 8px;-webkit-overflow-scrolling:touch}
+.pick-target-card{border:0;background:transparent;padding:0;cursor:pointer;touch-action:manipulation}
+.pick-target-card .playing-card{transition:transform .16s ease, box-shadow .16s ease, filter .16s ease}
+.pick-target-card.selected .playing-card{transform:translateY(-12px);box-shadow:0 0 0 4px rgba(255,212,59,.55),0 12px 22px rgba(182,64,64,.22);filter:brightness(1.05)}
+.pick-target-card:disabled{opacity:.45;cursor:not-allowed}
+.center-note{text-align:center;margin-top:10px}
+@media(max-width:650px){
+  .pick-target-cards{gap:7px;padding-top:14px}
+  .pick-target-card.selected .playing-card{transform:translateY(-10px)}
+}
 </style>
 </head>
 <body>
@@ -705,7 +718,7 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
         <label class="input-label option-toggle"><span>マッド・ピッグ</span><select id="madPigEnabled" class="input"><option value="true" selected>あり</option><option value="false">なし</option></select></label>
         <label class="input-label"><span>ババブタ失点</span><input id="jokerPenalty" class="input" type="number" value="-50" min="-999" max="0" step="1" /></label>
         <label class="input-label option-toggle"><span>残り手札の失点</span><select id="penaltyMode" class="input"><option value="flat3" selected>1枚ごとに-3点</option><option value="faceValue">数字分だけ失点</option></select></label>
-        <label class="input-label option-toggle"><span>開始時3枚パス</span><select id="passThreeEnabled" class="input"><option value="false" selected>なし</option><option value="true">あり</option></select></label>
+        <label class="input-label option-toggle"><span>ピック対象数</span><select id="pickTargetCount" class="input"><option value="0" selected>絞らない</option><option value="1">1枚</option><option value="2">2枚</option><option value="3">3枚</option><option value="4">4枚</option><option value="5">5枚</option><option value="6">6枚</option><option value="7">7枚</option><option value="8">8枚</option><option value="9">9枚</option><option value="10">10枚</option><option value="11">11枚</option><option value="12">12枚</option><option value="13">13枚</option></select></label><label class="input-label option-toggle"><span>開始時3枚パス</span><select id="passThreeEnabled" class="input"><option value="false" selected>なし</option><option value="true">あり</option></select></label>
         <label class="input-label option-toggle"><span>開始時ペア捨て</span><select id="initialPairDiscardEnabled" class="input"><option value="false" selected>なし</option><option value="true">あり</option></select></label>
       </div>
     </details>
@@ -760,7 +773,7 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
           <h3>ピックとペア</h3>
           <ul>
             <li>勝者は場の4枚をごちそう山へ。</li>
-            <li>勝者は最弱の手札から1枚ピック。</li>
+            <li>勝者は最弱の手札から1枚ピック。</li><li>部屋設定ONなら、最弱側がピック候補を指定枚数に絞れます。</li>
             <li>同じ数字ができたら、ペアで捨てるかスキップを選ぶ。</li>
           </ul>
         </div>
@@ -785,6 +798,7 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
 let ws, state=null, myId=null;
 let initialPairSelectedId=null;
 let passSelectedIds=[];
+let pickTargetSelectedIds=[];
 let __lastPickReady=false;
 const suitsClass={'♠':'spades','♥':'hearts','♦':'diamonds','♣':'clubs'};
 const art={'♥':'🐷💗','♦':'🐷🍎','♣':'🐷🌽','♠':'🐷🌙'};
@@ -800,16 +814,19 @@ function hypeToast(text){
   setTimeout(()=>div.remove(), 2600);
 }
 let __lastHypeKey='';
+
 function hypeByState(){
   if(!state) return;
-  const key = `${state.phase}:${state.round}:${state.trickReview ? 'review' : ''}:${state.pendingPick?.pairChoice ? 'pair' : ''}:${state.pendingPick?.result?.text || ''}`;
+  const key = `${state.phase}:${state.round}:${state.trickReview ? 'review' : ''}:${state.pendingPick?.targetSelectionRequired && !state.pendingPick?.targetSelectionDone ? 'target' : ''}:${state.pendingPick?.pairChoice ? 'pair' : ''}:${state.pendingPick?.result?.text || ''}`;
   if(key===__lastHypeKey) return;
   __lastHypeKey=key;
-  if(state.pendingPick?.pairChoice) hypeToast('✨ ペア選択！');
+  if(state.pendingPick?.targetSelectionRequired && !state.pendingPick?.targetSelectionDone) hypeToast('🎯 ピック候補選択！');
+  else if(state.pendingPick?.pairChoice) hypeToast('✨ ペア選択！');
   else if(state.pendingPick?.result) hypeToast(state.pendingPick.result.paired ? '✨ ペア浄化！' : '🐽 ピック結果！');
   else if(state.trickReview) hypeToast('👀 トリック決着！');
   else if(state.phase==='finished') hypeToast('🏆 最終結果！');
 }
+
 
 
 
@@ -869,7 +886,7 @@ function scheduleReconnect(){
 }
 
 const $=id=>document.getElementById(id);
-$('create').onclick=()=>{ intentionalClose=false; connect(()=>send({type:'create', name:$('name').value, rounds:Number($('rounds').value || 3), madPigEnabled:$('madPigEnabled').value==='true', jokerPenalty:Number($('jokerPenalty').value || -50), initialPairDiscardEnabled:$('initialPairDiscardEnabled').value==='true', passThreeEnabled:$('passThreeEnabled').value==='true', penaltyMode:$('penaltyMode').value})); };
+$('create').onclick=()=>{ intentionalClose=false; connect(()=>send({type:'create', name:$('name').value, rounds:Number($('rounds').value || 3), madPigEnabled:$('madPigEnabled').value==='true', jokerPenalty:Number($('jokerPenalty').value || -50), initialPairDiscardEnabled:$('initialPairDiscardEnabled').value==='true', passThreeEnabled:$('passThreeEnabled').value==='true', penaltyMode:$('penaltyMode').value, pickTargetCount:Number($('pickTargetCount').value || 0)})); };
 $('join').onclick=()=>{ intentionalClose=false; const saved=loadReconnectInfo(); connect(()=>send({type:'join', name:$('name').value, code:$('code').value, playerId:saved?.playerId || null})); };
 $('start').onclick=()=>send({type:'start'});
 $('addCpu').onclick=()=>send({type:'addCpu'});
@@ -907,6 +924,42 @@ document.addEventListener('pointerup', handlePairChoiceEvent);
 document.addEventListener('click', handlePairChoiceEvent);
 
 
+
+
+
+let __lastPickTargetTapAt = 0;
+function handlePickTargetEvent(ev){
+  const btn = ev.target && ev.target.closest ? ev.target.closest('[data-pick-target-card-id],[data-pick-target-submit]') : null;
+  if(!btn || btn.disabled) return;
+  const pp = state && state.pendingPick;
+  if(!pp || !pp.targetSelectionRequired || pp.targetSelectionDone || state.yourIndex !== pp.weakestPid) return;
+  const now = Date.now();
+  if(now - __lastPickTargetTapAt < 160) return;
+  __lastPickTargetTapAt = now;
+  ev.preventDefault();
+
+  const need = Math.min(Number(pp.targetCount || 0), (me()?.hand || []).length);
+  if(btn.dataset.pickTargetSubmit === '1'){
+    if(pickTargetSelectedIds.length !== need){
+      $('message').textContent = `ピック候補を${need}枚選んでください。`;
+      return;
+    }
+    requestPickTargets(pickTargetSelectedIds);
+    return;
+  }
+
+  const id = btn.dataset.pickTargetCardId;
+  if(!id) return;
+  if(pickTargetSelectedIds.includes(id)){
+    pickTargetSelectedIds = pickTargetSelectedIds.filter(x=>x!==id);
+  } else {
+    if(pickTargetSelectedIds.length >= need) return;
+    pickTargetSelectedIds.push(id);
+  }
+  renderTable();
+}
+document.addEventListener('pointerup', handlePickTargetEvent);
+document.addEventListener('click', handlePickTargetEvent);
 
 
 let __lastPassTapAt = 0;
@@ -1055,6 +1108,10 @@ function madPigModeLabel(){
 function jokerPenaltyLabel(){
   return `ババ-${state?.jokerPenalty ?? 50}`;
 }
+function pickTargetModeLabel(){
+  const n = Number(state?.pickTargetCount || 0);
+  return n > 0 ? `候補${n}枚` : 'ピック絞らない';
+}
 
 function isMadPig(card){ return !!card && !card.joker && card.suit==='♠' && String(card.rank)==='11'; }
 function seatNumber(pid){ return pid+1; }
@@ -1079,6 +1136,7 @@ function render(){
   if(!state) return;
   if(state.phase !== 'passing') passSelectedIds = [];
   if(state.phase !== 'initialPair') initialPairSelectedId = null;
+  if(!state.pendingPick || !state.pendingPick.targetSelectionRequired || state.pendingPick.targetSelectionDone) pickTargetSelectedIds = [];
   $('roomInfo').style.display='block'; $('roomCode').textContent=state.code;
   $('phase').textContent = state.phase==='lobby'?'ロビー':state.phase==='passing'?'3枚パス':state.phase==='initialPair'?'開始ペア':state.phase==='playing'?'対戦中':state.phase==='roundEnd'?'ラウンド結果確認':state.phase==='finished'?'終了':'-';
   $('round').textContent=state.round||'-'; $('turn').textContent=state.current!=null?playerName(state.current):'-'; $('lead').textContent=state.lead!=null?playerName(state.lead):'-';
@@ -1102,7 +1160,7 @@ function render(){
 
   // ピック確認中はDOMを再生成せず、秒数とボタン状態だけ更新する。
   // これによりピック画面のちらつき・カクつきを防ぐ。
-  if(state.pendingPick && !state.pendingPick.result && !window.__pickReadyTimer){
+  if(state.pendingPick && !state.pendingPick.result && !(state.pendingPick.targetSelectionRequired && !state.pendingPick.targetSelectionDone) && !window.__pickReadyTimer){
     window.__pickReadyTimer = setInterval(()=>{
       if(!state || !state.pendingPick || state.pendingPick.result){
         clearInterval(window.__pickReadyTimer); window.__pickReadyTimer=null;
@@ -1130,7 +1188,8 @@ function renderRoundStatus(){
     `${state.totalRounds || 3}R`,
     penaltyModeLabel(),
     jokerPenaltyLabel(),
-    madPigModeLabel()
+    madPigModeLabel(),
+    pickTargetModeLabel()
   ];
   if(state.passThreeEnabled) chips.push('3枚パス');
   if(state.initialPairDiscardEnabled) chips.push('開始ペア');
@@ -1221,8 +1280,10 @@ function renderLastTrick(){
 }
 
 
+
 function updatePickScreenStatus(pp){
   if(!pp) return;
+  if(pp.targetSelectionRequired && !pp.targetSelectionDone) return;
   const ready = isPickReady(pp);
   const waitSec = pickRemainingSeconds(pp);
   const statusEl = document.getElementById('pickStatus');
@@ -1243,19 +1304,22 @@ function updatePickScreenStatus(pp){
   }
 }
 
+
+
 function renderTable(){
   const pp = state.pendingPick;
   if(pp){
     const w=state.players[pp.winnerPid], l=state.players[pp.weakestPid];
     const ready=isPickReady(pp);
     const waitSec=pickRemainingSeconds(pp);
-    const mode = pp.result ? 'result'
+    const isTargetSelecting = pp.targetSelectionRequired && !pp.targetSelectionDone;
+    const targetSelectedKey = isTargetSelecting && state.yourIndex===pp.weakestPid ? pickTargetSelectedIds.slice().sort().join(',') : '';
+    const mode = isTargetSelecting ? `target:${pp.weakestPid}:${pp.targetCount}:${state.yourIndex===pp.weakestPid?'me':'wait'}:${targetSelectedKey}`
+      : pp.result ? 'result'
       : pp.pairChoice ? `pair:${pp.pairChoice.drawn?.id || ''}:${pp.pairChoice.candidateCount || 0}:${state.yourIndex===pp.winnerPid?'me':'wait'}`
-      : `pick:${pp.winnerPid}:${pp.weakestPid}:${l.handCount}:${state.yourIndex===pp.winnerPid?'me':'wait'}`;
+      : `pick:${pp.winnerPid}:${pp.weakestPid}:${pp.targetCandidateCount || l.handCount}:${state.yourIndex===pp.winnerPid?'me':'wait'}`;
 
-    // 原因：以前は確認中の250msタイマーやサーバー再送のたびにinnerHTMLを丸ごと再生成していたため、
-    // pick-stageやカード裏面のCSSアニメーションが毎回リスタートし、ピック画面がカクついて見えていた。
-    // 対策：同じピック構造の間はDOMを作り直さず、秒数とdisabled状態だけ更新する。
+    // 同じピック構造の間はDOMを作り直さず、秒数とdisabled状態だけ更新する。
     if($('table').dataset.renderKey === mode){
       updatePickScreenStatus(pp);
       return;
@@ -1268,7 +1332,24 @@ function renderTable(){
         <div class="pick-big-arrow">➡<small>1枚ピック</small></div>
         <div class="pick-person weakest"><div class="big">💀🐽</div><div>最弱</div><div>${esc(l.name)}</div></div>
       </div>`;
-    if(pp.result){
+
+    if(isTargetSelecting){
+      const need = Math.min(Number(pp.targetCount || 0), (me()?.hand || []).length || l.handCount || 0);
+      if(state.yourIndex===pp.weakestPid){
+        const hand = me()?.hand || [];
+        pickTargetSelectedIds = pickTargetSelectedIds.filter(id=>hand.some(c=>c.id===id));
+        const count = pickTargetSelectedIds.length;
+        html += `<div class="pick-status" id="pickStatus">あなたがピック候補を選びます。<b>${count}/${need}</b>枚</div>`;
+        html += `<div class="pick-target-panel"><div class="pick-target-cards">`;
+        for(const c of hand){
+          const selected = pickTargetSelectedIds.includes(c.id);
+          html += `<button type="button" class="pick-target-card ${selected?'selected':''}" data-pick-target-card-id="${escAttr(c.id)}">${cardHTML(c,true)}<div class="small">${selected?'候補':'選ぶ'}</div></button>`;
+        }
+        html += `</div><button type="button" class="btn" ${count===need?'':'disabled'} data-pick-target-submit="1">この${need}枚を候補にする</button><div class="small">選んだ候補の中から、勝者が1枚ピックします。</div></div>`;
+      } else {
+        html += `<div class="pick-status" id="pickStatus">${esc(l.name)} がピック候補を${pp.targetCount}枚に絞っています。</div><div class="small center-note">候補が決まると、${esc(w.name)} がその中から1枚選びます。</div>`;
+      }
+    } else if(pp.result){
       html += `<div class="pick-status" id="pickStatus">${esc(pp.result.text)}</div><div class="pick-result"><span>引いたカード</span>${cardHTML(pp.result.drawn,true)}</div>`;
     } else if(pp.pairChoice){
       const pc = pp.pairChoice;
@@ -1283,12 +1364,14 @@ function renderTable(){
         html += `<div class="pick-status">${esc(w.name)} のペア選択待ちです。</div>`;
       }
     } else if(state.yourIndex===pp.winnerPid){
+      const cnt = pp.targetCandidateCount || l.handCount;
       html += `<div class="pick-status" id="pickStatus">${ready?'1枚選んでピック！':`確認中…あと${waitSec}秒`}</div><div class="pick-hand">`;
-      for(let i=0;i<l.handCount;i++) html += `<button type="button" class="pick-card" ${ready?'':'disabled'} data-pick-index="${i}"><div class="playing-card back"></div></button>`;
+      for(let i=0;i<cnt;i++) html += `<button type="button" class="pick-card" ${ready?'':'disabled'} data-pick-index="${i}"><div class="playing-card back"></div></button>`;
       html += `</div>`;
     } else {
+      const cnt = pp.targetCandidateCount || l.handCount;
       html += `<div class="pick-status" id="pickStatus">${ready?`${esc(w.name)} が選択中です。`:`確認中…あと${waitSec}秒`}</div><div class="pick-hand">`;
-      for(let i=0;i<l.handCount;i++) html += `<div class="playing-card back"></div>`;
+      for(let i=0;i<cnt;i++) html += `<div class="playing-card back"></div>`;
       html += `</div>`;
     }
     html += `</div>`;
@@ -1333,6 +1416,7 @@ function renderTable(){
   }).join('');
   $('table').innerHTML=`${reviewBanner}<div class="turn-order-bar"><span class="small">時計回り：</span>${orderLine}</div><div class="play-trail">${trail}</div><div class="table-board">${seats}<div class="center-wheel"><div class="cw-arrow">↻</div><div>時計回り</div><div class="cw-small">次は ${state.current!=null&&!state.pendingPick?esc(playerName(state.current)):'結果確認中'} </div></div></div>`;
 }
+
 
 
 function playable(card){
@@ -1423,6 +1507,15 @@ function requestPick(i){
   send({type:'pick', index:Number(i)});
 }
 window.pick = requestPick;
+
+function requestPickTargets(cardIds){
+  if(!ws || ws.readyState!==1){
+    $('message').textContent = '通信が切れています。ページを再読み込みして再参加してください。';
+    return;
+  }
+  send({type:'pickTargets', cardIds:(cardIds||[]).map(String)});
+  pickTargetSelectedIds = [];
+}
 
 function requestPairChoice(cardId, skip){
   if(!ws || ws.readyState!==1){
