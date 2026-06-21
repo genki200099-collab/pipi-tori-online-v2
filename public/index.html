@@ -682,11 +682,15 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
 @media(max-width:900px){.status{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.status{grid-template-columns:repeat(2,1fr)}}
 
+
+/* --- ピック画面ちらつき対策 --- */
+.pick-stage{will-change:auto}
+.pick-stage .pick-card .back{backface-visibility:hidden;transform:translateZ(0)}
 </style>
 </head>
 <body>
 <div id="app">
-  <header class="hero"><h1>🐷 ピピとりオンライン</h1><p>ピッグ・ピック・トリック｜CPUもしゃべる盛り上げ版</p></header>
+  <header class="hero"><h1>🐷 ピピとりオンライン</h1><p>作成日時：2026-06-21 15:15 JST</p></header>
 
   <section id="lobby" class="cardbox">
     <h2>オンライン部屋</h2>
@@ -781,6 +785,7 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
 let ws, state=null, myId=null;
 let initialPairSelectedId=null;
 let passSelectedIds=[];
+let __lastPickReady=false;
 const suitsClass={'♠':'spades','♥':'hearts','♦':'diamonds','♣':'clubs'};
 const art={'♥':'🐷💗','♦':'🐷🍎','♣':'🐷🌽','♠':'🐷🌙'};
 const faces=['🐷','🐽','🐖','🐗'];
@@ -1075,13 +1080,13 @@ function render(){
   if(state.phase !== 'passing') passSelectedIds = [];
   if(state.phase !== 'initialPair') initialPairSelectedId = null;
   $('roomInfo').style.display='block'; $('roomCode').textContent=state.code;
-  $('phase').textContent = state.phase==='lobby'?'ロビー':state.phase==='playing'?'対戦中':state.phase==='roundEnd'?'ラウンド結果確認':state.phase==='finished'?'終了':'-';
+  $('phase').textContent = state.phase==='lobby'?'ロビー':state.phase==='passing'?'3枚パス':state.phase==='initialPair'?'開始ペア':state.phase==='playing'?'対戦中':state.phase==='roundEnd'?'ラウンド結果確認':state.phase==='finished'?'終了':'-';
   $('round').textContent=state.round||'-'; $('turn').textContent=state.current!=null?playerName(state.current):'-'; $('lead').textContent=state.lead!=null?playerName(state.lead):'-';
   $('message').textContent=state.message||'';
   $('start').disabled = !(isHost() && state.phase==='lobby' && state.players.length===4);
   $('addCpu').disabled = !(isHost() && state.phase==='lobby' && state.players.length<4);
   $('removeCpu').disabled = !(isHost() && state.phase==='lobby' && state.players.some(p=>p.cpu));
-  renderRoundStatus(); renderRoundModal(); renderCommentary(); renderPlayers(); renderLastTrick(); renderTable(); renderHand(); renderPick(); renderLog(); renderScore();
+  renderRoundStatus(); renderRoundModal(); renderCommentary(); renderPlayers(); renderLastTrick(); renderTable(); renderHand(); renderPick(); renderLog(); renderScore(); hypeByState();
   if(state.trickReview && state.trickReview.until > Date.now() && !window.__reviewTimer){
     window.__reviewTimer = setInterval(()=>{
       if(!state || !state.trickReview || state.trickReview.until <= Date.now()){
@@ -1095,16 +1100,17 @@ function render(){
     }, 250);
   }
 
-  // ピック確認中は、サーバー再送が遅れてもクライアント側でready表示へ切り替える。
-  // 場全体を更新する必要があるが、ピック専用画面のみなのでカードの小刻み再アニメ問題は起きにくい。
+  // ピック確認中はDOMを再生成せず、秒数とボタン状態だけ更新する。
+  // これによりピック画面のちらつき・カクつきを防ぐ。
   if(state.pendingPick && !state.pendingPick.result && !window.__pickReadyTimer){
     window.__pickReadyTimer = setInterval(()=>{
       if(!state || !state.pendingPick || state.pendingPick.result){
         clearInterval(window.__pickReadyTimer); window.__pickReadyTimer=null;
         return;
       }
-      renderTable();
+      updatePickScreenStatus(state.pendingPick);
       if(isPickReady(state.pendingPick)){
+        updatePickScreenStatus(state.pendingPick);
         clearInterval(window.__pickReadyTimer); window.__pickReadyTimer=null;
       }
     }, 250);
@@ -1204,16 +1210,57 @@ function renderPlayers(){
 }
 
 
+
 function renderLastTrick(){
   const lt=state.lastTrick;
-  $('lastTrick').innerHTML = lt ? `<div class="result-banner"><span>👑 勝者：${esc(lt.winnerName)}<br><small>${esc(lt.winnerCard)}でごちそう山ゲット</small></span><span>💀 最弱：${esc(lt.weakestName)}<br><small>${esc(lt.weakestCard)}で袋を狙われる！</small></span></div>` : '';
+  if(!lt || !state.trickReview){
+    $('lastTrick').innerHTML='';
+    return;
+  }
+  $('lastTrick').innerHTML = `<div class="result-banner"><span>👑 勝者：${esc(lt.winnerName)}<br><small>${esc(lt.winnerCard)}</small></span><span>💀 最弱：${esc(lt.weakestName)}<br><small>${esc(lt.weakestCard)}</small></span></div>`;
 }
+
+
+function updatePickScreenStatus(pp){
+  if(!pp) return;
+  const ready = isPickReady(pp);
+  const waitSec = pickRemainingSeconds(pp);
+  const statusEl = document.getElementById('pickStatus');
+  if(statusEl && !pp.result && !pp.pairChoice){
+    if(state.yourIndex===pp.winnerPid){
+      statusEl.textContent = ready ? '1枚選んでピック！' : `確認中…あと${waitSec}秒`;
+    } else {
+      const w=state.players[pp.winnerPid];
+      statusEl.textContent = ready ? `${w.name} が選択中です。` : `確認中…あと${waitSec}秒`;
+    }
+  }
+  if(ready !== __lastPickReady){
+    document.querySelectorAll('#table .pick-card').forEach(btn=>{
+      if(ready) btn.removeAttribute('disabled');
+      else btn.setAttribute('disabled','disabled');
+    });
+    __lastPickReady = ready;
+  }
+}
+
 function renderTable(){
   const pp = state.pendingPick;
   if(pp){
     const w=state.players[pp.winnerPid], l=state.players[pp.weakestPid];
     const ready=isPickReady(pp);
     const waitSec=pickRemainingSeconds(pp);
+    const mode = pp.result ? 'result'
+      : pp.pairChoice ? `pair:${pp.pairChoice.drawn?.id || ''}:${pp.pairChoice.candidateCount || 0}:${state.yourIndex===pp.winnerPid?'me':'wait'}`
+      : `pick:${pp.winnerPid}:${pp.weakestPid}:${l.handCount}:${state.yourIndex===pp.winnerPid?'me':'wait'}`;
+
+    // 原因：以前は確認中の250msタイマーやサーバー再送のたびにinnerHTMLを丸ごと再生成していたため、
+    // pick-stageやカード裏面のCSSアニメーションが毎回リスタートし、ピック画面がカクついて見えていた。
+    // 対策：同じピック構造の間はDOMを作り直さず、秒数とdisabled状態だけ更新する。
+    if($('table').dataset.renderKey === mode){
+      updatePickScreenStatus(pp);
+      return;
+    }
+
     let html=`<div class="pick-stage">
       <h3>🐽 ピック</h3>
       <div class="pick-main">
@@ -1222,10 +1269,10 @@ function renderTable(){
         <div class="pick-person weakest"><div class="big">💀🐽</div><div>最弱</div><div>${esc(l.name)}</div></div>
       </div>`;
     if(pp.result){
-      html += `<div class="pick-status">${esc(pp.result.text)}</div><div class="pick-result"><span>引いたカード</span>${cardHTML(pp.result.drawn,true)}</div>`;
+      html += `<div class="pick-status" id="pickStatus">${esc(pp.result.text)}</div><div class="pick-result"><span>引いたカード</span>${cardHTML(pp.result.drawn,true)}</div>`;
     } else if(pp.pairChoice){
       const pc = pp.pairChoice;
-      html += `<div class="pick-status">引いたカード：${cardHTML(pc.drawn,true)}<br>ペアにするか、スキップできます。</div>`;
+      html += `<div class="pick-status" id="pickStatus">引いたカード：${cardHTML(pc.drawn,true)}<br>ペアにするか、スキップできます。</div>`;
       if(state.yourIndex===pp.winnerPid && Array.isArray(pc.candidates)){
         html += `<div class="pair-choice"><h4>ペアにするカードを選択</h4><div class="pair-cards">`;
         for(const c of pc.candidates){
@@ -1236,23 +1283,26 @@ function renderTable(){
         html += `<div class="pick-status">${esc(w.name)} のペア選択待ちです。</div>`;
       }
     } else if(state.yourIndex===pp.winnerPid){
-      html += `<div class="pick-status">${ready?'1枚選んでピック！':`確認中…あと${waitSec}秒`}</div><div class="pick-hand">`;
+      html += `<div class="pick-status" id="pickStatus">${ready?'1枚選んでピック！':`確認中…あと${waitSec}秒`}</div><div class="pick-hand">`;
       for(let i=0;i<l.handCount;i++) html += `<button type="button" class="pick-card" ${ready?'':'disabled'} data-pick-index="${i}"><div class="playing-card back"></div></button>`;
       html += `</div>`;
     } else {
-      html += `<div class="pick-status">${ready?`${esc(w.name)} が選択中です。`:`確認中…あと${waitSec}秒`}</div><div class="pick-hand">`;
+      html += `<div class="pick-status" id="pickStatus">${ready?`${esc(w.name)} が選択中です。`:`確認中…あと${waitSec}秒`}</div><div class="pick-hand">`;
       for(let i=0;i<l.handCount;i++) html += `<div class="playing-card back"></div>`;
       html += `</div>`;
     }
     html += `</div>`;
     $('table').classList.add('pick-mode');
     $('table').classList.remove('playing-now');
+    $('table').dataset.renderKey = mode;
     $('table').innerHTML = html;
+    __lastPickReady = ready;
     return;
   }
+  $('table').dataset.renderKey = '';
   $('table').classList.remove('pick-mode');
   $('table').classList.add('playing-now');
-  const lt=state.lastTrick;
+  const lt=state.trickReview ? state.lastTrick : null;
   const order = playersClockwise();
   const trickMap = new Map((state.trick||[]).map(t=>[t.pid,t]));
   const lead = state.lead ?? 0;
@@ -1283,6 +1333,7 @@ function renderTable(){
   }).join('');
   $('table').innerHTML=`${reviewBanner}<div class="turn-order-bar"><span class="small">時計回り：</span>${orderLine}</div><div class="play-trail">${trail}</div><div class="table-board">${seats}<div class="center-wheel"><div class="cw-arrow">↻</div><div>時計回り</div><div class="cw-small">次は ${state.current!=null&&!state.pendingPick?esc(playerName(state.current)):'結果確認中'} </div></div></div>`;
 }
+
 
 function playable(card){
   if(!state || !card) return false;
@@ -1468,7 +1519,7 @@ function renderScore(){
   const rows=sorted.map((p,idx)=>`<tr><td>${medal[idx]} ${rankLabel[idx]}</td><td>${esc(p.name)}</td><td>${p.final.pile}</td><td>-${p.final.handPenalty ?? (p.final.normalHand*3)}</td><td>${state.madPigEnabled !== false ? `-${p.final.madPigPenalty ?? (p.final.madPig*13)}` : `なし`}</td><td>-${p.final.joker*(p.final.jokerPenaltyValue ?? state.jokerPenalty ?? 50)}</td><td><b>${p.final.total}</b></td></tr>`).join('');
 
   const last = sorted[sorted.length-1];
-  const finalReason = state.finalRoundSummary ? `<div class="final-comment"><b>第2ラウンド終了理由：</b>${esc(state.finalRoundSummary.reasonText)}</div>` : '';
+  const finalReason = state.finalRoundSummary ? `<div class="final-comment"><b>第${state.finalRoundSummary.round || state.round}ラウンド終了理由：</b>${esc(state.finalRoundSummary.reasonText)}</div>` : '';
 
   const comment = win.final.total===last.final.total
     ? '全員同点！これはもう全員でブヒブヒ拍手です。'

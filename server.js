@@ -846,7 +846,7 @@ function startGame(room, requesterId){
   if(room.passThreeEnabled){
     room.phase='passing';
     room.current=null;
-    room.message='3枚パスフェイズです。ババブタ以外から3枚選び、次の手番の人へ渡します。';
+    room.message='3枚パス：ババブタ以外から3枚選んでください。';
     log(room, '3枚パスあり。各プレイヤーは次の手番の人へ通常カードを3枚渡します。ババブタは渡せません。');
     autoResolveCpuPasses(room);
     maybeFinishPassPhase(room);
@@ -856,7 +856,7 @@ function startGame(room, requesterId){
   if(room.initialPairDiscardEnabled){
     room.phase='initialPair';
     room.current=null;
-    room.message='開始時ペア捨てフェイズです。捨てたい同じ数字のペアを選ぶか、スキップしてください。';
+    room.message='開始時ペア捨て：ペアを捨てるかスキップしてください。';
     log(room, '開始時ペア捨てあり。各プレイヤーは任意で手札の同じ数字ペアを捨てられます。');
     autoResolveCpuInitialPairs(room);
     maybeFinishInitialPairPhase(room);
@@ -962,7 +962,7 @@ function finishPassThreePhase(room){
   if(room.initialPairDiscardEnabled){
     room.phase='initialPair';
     room.current=null;
-    room.message='3枚パス完了。開始時ペア捨てフェイズです。捨てたい同じ数字のペアを選ぶか、スキップしてください。';
+    room.message='3枚パス完了。開始時ペア捨てへ進みます。';
     log(room, '開始時ペア捨てあり。各プレイヤーは任意で手札の同じ数字ペアを捨てられます。');
     autoResolveCpuInitialPairs(room);
     maybeFinishInitialPairPhase(room);
