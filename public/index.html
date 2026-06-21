@@ -1099,6 +1099,30 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
   transform:translateZ(0);
 }
 
+
+/* --- 全体点検UI補正 --- */
+.settings-details.advanced-settings{
+  display:block;
+}
+.advanced-settings-summary{
+  min-height:44px;
+}
+.advanced-settings-summary .small{
+  opacity:.8;
+}
+@media(max-width:700px){
+  .advanced-settings-summary{
+    line-height:1.35;
+  }
+  .advanced-settings .settings-grid{
+    padding:10px;
+  }
+}
+.hero:after{
+  content:none!important;
+  display:none!important;
+}
+
 </style>
 </head>
 <body>
@@ -1111,8 +1135,8 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
       <input id="name" class="input" placeholder="名前（例：ピピ）" maxlength="12" />
       <button id="create" class="btn create-btn">部屋を作る</button>
     </div>
-    <details class="settings-details" class="advanced-settings"
-      <summary class="advanced-settings-summary"⚙️ 詳細設定を開く（ルールをカスタマイズ） <span class="small">初期設定のままでも遊べます</span></summary><div class="advanced-settings-hint">ラウンド数・失点方式・マッドピッグ・3枚パス・開始時ペア捨てなどを設定できます。</div>
+    <details class="settings-details advanced-settings">
+      <summary class="advanced-settings-summary">⚙️ 詳細設定を開く（ルールをカスタマイズ） <span class="small">初期設定のままでも遊べます</span></summary><div class="advanced-settings-hint">ラウンド数・失点方式・マッドピッグ・3枚パス・開始時ペア捨てなどを設定できます。</div>
       <div class="settings-grid">
         <label class="input-label">ラウンド数<select id="rounds" class="input"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label>
         <label class="input-label option-toggle"><span>マッド・ピッグ</span><select id="madPigEnabled" class="input"><option value="true" selected>あり</option><option value="false">なし</option></select></label>
@@ -1202,6 +1226,8 @@ let pickTargetSelectedIds=[];
 let __lastPickReady=false;
 let __lastCommentaryRenderKey='';
 let __lastPlayersRenderKey='';
+let __lastRoundStatusKey='';
+let __lastHandRenderKey='';
 const suitsClass={'♠':'spades','♥':'hearts','♦':'diamonds','♣':'clubs'};
 const art={'♥':'🐷💗','♦':'🐷🍎','♣':'🐷🌽','♠':'🐷🌙'};
 const faces=['🐷','🐽','🐖','🐗'];
@@ -1217,17 +1243,18 @@ function hypeToast(text){
 }
 let __lastHypeKey='';
 
+
 function hypeByState(){
   if(!state) return;
   const key = `${state.phase}:${state.round}:${state.trickReview ? 'review' : ''}:${state.pendingPick?.targetSelectionRequired && !state.pendingPick?.targetSelectionDone ? 'target' : ''}:${state.pendingPick?.pairChoice ? 'pair' : ''}:${state.pendingPick?.result?.text || ''}`;
   if(key===__lastHypeKey) return;
   __lastHypeKey=key;
-  if(state.pendingPick?.targetSelectionRequired && !state.pendingPick?.targetSelectionDone) hypeToast('🎯 ピック候補選択！');
-  else if(state.pendingPick?.pairChoice) hypeToast('✨ ペア選択！');
-  else if(state.pendingPick?.result) hypeToast(state.pendingPick.result.paired ? '✨ ペア浄化！' : '🐽 ピック結果！');
-  else if(state.trickReview) hypeToast('👀 トリック決着！');
-  else if(state.phase==='finished') hypeToast('🏆 最終結果！');
+  if(state.pendingPick?.targetSelectionRequired && !state.pendingPick?.targetSelectionDone) hypeToast('🎯 ピック候補選択');
+  else if(state.pendingPick?.pairChoice) hypeToast('✨ ペア選択');
+  else if(state.pendingPick?.result) hypeToast(state.pendingPick.result.paired ? '✨ ペア浄化' : 'ピック結果');
+  else if(state.phase==='finished') hypeToast('🏆 最終結果');
 }
+
 
 
 
@@ -1603,6 +1630,7 @@ function render(){
   }
 }
 
+
 function renderRoundStatus(){
   const el=$('roundStatus');
   if(!el || !state){ return; }
@@ -1623,9 +1651,14 @@ function renderRoundStatus(){
   if(state.initialPairDiscardEnabled) chips.push('開始ペア');
   if(state.roundEndDeferred) chips.push('トリック後終了');
 
-  const start = state.roundStart ? `<div class="round-start"><div class="round-title">🐷 第${state.roundStart.round}R開始！</div><div>${esc(state.roundStart.text)}</div></div>` : '';
-  el.innerHTML = `<div class="round-big">${esc(label)}</div><div class="setting-chips">${chips.map(c=>`<span>${esc(c)}</span>`).join('')}</div>${start}`;
+  const start = state.roundStart ? `<div class="round-start"><div class="round-title">第${state.roundStart.round}R開始！</div><div>${esc(state.roundStart.text)}</div></div>` : '';
+  const html = `<div class="round-big">${esc(label)}</div><div class="setting-chips">${chips.map(c=>`<span>${esc(c)}</span>`).join('')}</div>${start}`;
+  const key = `${label}|${chips.join(',')}|${state.roundStart?.round||''}|${state.roundStart?.text||''}|${state.roundStart?.expiresAt||''}`;
+  if(key === __lastRoundStatusKey) return;
+  __lastRoundStatusKey = key;
+  el.innerHTML = html;
 }
+
 
 
 function renderRoundModal(){
@@ -1938,11 +1971,29 @@ function playable(card){
   // 出せるカード判定はサーバーを正とする。Edge/ラウンド開始直後の判定ズレ対策。
   return Array.isArray(state.playableCardIds) && state.playableCardIds.includes(card.id);
 }
+
 function renderHand(){
   const hand=me()?.hand || [];
   const playableSet = new Set(state?.playableCardIds || []);
   const initialSet = new Set(state?.initialPairCandidateIds || []);
   const passableSet = new Set(state?.passableCardIds || []);
+  const handKey = [
+    state?.phase,
+    state?.yourIndex,
+    state?.current,
+    state?.isYourTurn,
+    state?.penaltyMode,
+    state?.madPigEnabled,
+    (state?.passDone || []).join(','),
+    (state?.initialPairDone || []).join(','),
+    (state?.playableCardIds || []).join(','),
+    (state?.initialPairCandidateIds || []).join(','),
+    (state?.passableCardIds || []).join(','),
+    hand.map(c=>c.id).join(',')
+  ].join('|');
+  if(handKey === __lastHandRenderKey) return;
+  __lastHandRenderKey = handKey;
+
   let note = '';
 
   if(state?.phase === 'passing'){
@@ -2004,6 +2055,7 @@ function renderHand(){
 
   $('hand').innerHTML = cards;
 }
+
 
 function requestPlay(id){
   if(!ws || ws.readyState!==1){

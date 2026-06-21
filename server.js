@@ -71,18 +71,27 @@ function cloneCardWithFreshId(card){
   return {...card, faceKey:`${card.suit}${card.rank}`, id:`D${deckSerial++}-${card.suit}${card.rank}-${Date.now()}-${Math.random().toString(16).slice(2)}`};
 }
 
+
+
 function collectActiveFaceKeys(room){
   const keys = new Set();
   if(!room || !room.players) return keys;
+
+  // 次ラウンド補充の重複防止対象は、現在プレイ領域に残っているカード。
+  // 得点パイル・ペア浄化済みカードは「得点/履歴」として保持し、補充山の重複制限からは外す。
+  // ピック結果やペア候補は既に誰かの手札に含まれているため、ここでは重複登録しない。
   for(const p of room.players){
     for(const c of p.hand || []) keys.add(cardFaceKey(c));
-    for(const c of p.scorePile || []) keys.add(cardFaceKey(c));
   }
   for(const t of room.trick || []) keys.add(cardFaceKey(t.card));
   for(const c of room.stock || []) keys.add(cardFaceKey(c));
-  if(room.pendingPick?.result?.card) keys.add(cardFaceKey(room.pendingPick.result.card));
+
   return keys;
 }
+
+
+
+
 
 function assertUniqueActiveCards(room, context=''){
   const seen = new Map();
@@ -93,20 +102,26 @@ function assertUniqueActiveCards(room, context=''){
     if(seen.has(key)) duplicates.push(`${key}: ${seen.get(key)} / ${place}`);
     else seen.set(key, place);
   }
+
   if(room && room.players){
     for(const p of room.players){
       for(const c of p.hand || []) check(c, `${p.name}の手札`);
-      for(const c of p.scorePile || []) check(c, `${p.name}のごちそう山`);
     }
   }
   for(const t of room?.trick || []) check(t.card, `場のカード:${t.pid}`);
   for(const c of room?.stock || []) check(c, '補充山');
+
+  // 得点パイル・ペア浄化済みカードは得点/履歴として保持するため、
+  // 次ラウンド補充カードとの同じ数字/スート重複はエラー扱いしない。
+  // また、pendingPick.result / pairChoice は手札内カードへの参照なので二重チェックしない。
   if(duplicates.length){
     log(room, `⚠️ カード重複を検知しました${context ? '（'+context+'）' : ''}: ${duplicates.join(' / ')}`);
     return false;
   }
   return true;
 }
+
+
 
 function buildUniqueNormalRefillDeck(room){
   const active = collectActiveFaceKeys(room);
@@ -1950,6 +1965,7 @@ function makeRoundSnapshot(room, reasonPid, reasonText){
 
 
 
+
 function beginNextRound(room){
   if(!room || room.phase !== 'roundEnd') return;
   clearAllProgressTimers(room);
@@ -1969,7 +1985,6 @@ function beginNextRound(room){
   room.current = outPid;
   room.lastHumanTurnRebroadcastAt = 0;
   room.lastNoPlayableRebroadcastAt = 0;
-  room.roundStart = {round:nextRound, text:`第${nextRound}ラウンド開始！残り手札を持ち越して、13枚まで補充しました。`, expiresAt:Date.now()+6500};
 
   let refill = buildUniqueNormalRefillDeck(room);
   const drawRefill = () => {
@@ -1980,22 +1995,42 @@ function beginNextRound(room){
     if(!refill.length) refill = buildUniqueNormalRefillDeck(room);
     return refill.pop();
   };
+
+  const refillRows = [];
   for(const p of room.players){
-    while(p.hand.length<13){
+    const before = p.hand.length;
+    let added = 0;
+    while(p.hand.length < 13){
       const card = drawRefill();
       if(card && !collectActiveFaceKeys(room).has(cardFaceKey(card))){
         p.hand.push(card);
+        added++;
       } else {
         break;
       }
     }
     sortHand(p.hand);
+    refillRows.push(`${p.name}:${before}→${p.hand.length}${added ? `(+${added})` : ''}`);
   }
+
   assertUniqueActiveCards(room, `第${nextRound}ラウンド補充後`);
-  room.message=`第${nextRound}ラウンド開始。${room.players[room.current].name} からリード。`;
-  log(room, room.message);
+
+  const allFull = room.players.every(p=>p.hand.length === 13);
+  const refillText = allFull
+    ? '全員の手札を13枚まで補充しました。'
+    : '補充を行いましたが、一部の手札が13枚未満です。';
+
+  room.roundStart = {
+    round:nextRound,
+    text:`第${nextRound}ラウンド開始！残り手札を持ち越し、${refillText}`,
+    expiresAt:Date.now()+6500
+  };
+
+  room.message=`第${nextRound}ラウンド開始。${refillText} ${room.players[room.current].name} からリード。`;
+  log(room, `${room.message} 補充結果：${refillRows.join(' / ')}`);
   broadcast(room);
 }
+
 
 function beginRound2(room){
   beginNextRound(room);
