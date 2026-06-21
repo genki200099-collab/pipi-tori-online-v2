@@ -699,6 +699,55 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
   .pick-target-cards{gap:7px;padding-top:14px}
   .pick-target-card.selected .playing-card{transform:translateY(-10px)}
 }
+
+/* --- 選択画面ちらつき対策 --- */
+.pass-panel:after,.initial-pair-panel:after{animation:none!important;display:none!important}
+.hand-card.pass-selected .playing-card,
+.hand-card.initial-selected .playing-card,
+.pick-target-card.selected .playing-card{animation:none!important}
+.hand-card,.pick-target-card,.pair-card-btn{backface-visibility:hidden;transform:translateZ(0)}
+
+
+.hand-card.initial-selected .playing-card{
+  box-shadow:0 0 0 4px rgba(255,212,59,.55),0 14px 26px rgba(212,165,54,.24)!important;
+}
+.hand-card.initial-candidate .playing-card{
+  box-shadow:0 0 0 4px rgba(79,209,123,.45),0 14px 26px rgba(79,209,123,.18)!important;
+}
+
+
+/* --- PICK対象バッジ位置修正 --- */
+.pick-target-badge{
+  position:absolute;
+  top:10px;
+  right:12px;
+  left:auto !important;
+  transform:rotate(-8deg);
+  z-index:6;
+  pointer-events:none;
+  max-width:110px;
+  text-align:center;
+  white-space:nowrap;
+}
+.seat{
+  position:relative;
+  overflow:visible;
+}
+.seat .who{
+  padding-right:108px;
+}
+@media(max-width:900px){
+  .pick-target-badge{
+    top:8px;
+    right:10px;
+    max-width:92px;
+    font-size:12px;
+  }
+  .seat .who{
+    padding-right:92px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -928,6 +977,7 @@ document.addEventListener('click', handlePairChoiceEvent);
 
 
 let __lastPickTargetTapAt = 0;
+
 function handlePickTargetEvent(ev){
   const btn = ev.target && ev.target.closest ? ev.target.closest('[data-pick-target-card-id],[data-pick-target-submit]') : null;
   if(!btn || btn.disabled) return;
@@ -956,13 +1006,15 @@ function handlePickTargetEvent(ev){
     if(pickTargetSelectedIds.length >= need) return;
     pickTargetSelectedIds.push(id);
   }
-  renderTable();
+  updatePickTargetSelectionUI();
 }
+
 document.addEventListener('pointerup', handlePickTargetEvent);
 document.addEventListener('click', handlePickTargetEvent);
 
 
 let __lastPassTapAt = 0;
+
 function handlePassThreeEvent(ev){
   const btn = ev.target && ev.target.closest ? ev.target.closest('[data-pass-card-id],[data-pass-submit]') : null;
   if(!btn || btn.disabled) return;
@@ -985,13 +1037,15 @@ function handlePassThreeEvent(ev){
     if(passSelectedIds.length >= 3) return;
     passSelectedIds.push(id);
   }
-  renderHand();
+  updatePassSelectionUI();
 }
+
 document.addEventListener('pointerup', handlePassThreeEvent);
 document.addEventListener('click', handlePassThreeEvent);
 
 
 let __lastInitialPairTapAt = 0;
+
 function handleInitialPairEvent(ev){
   const btn = ev.target && ev.target.closest ? ev.target.closest('[data-initial-card-id],[data-initial-skip]') : null;
   if(!btn || btn.disabled) return;
@@ -1012,6 +1066,13 @@ function handleInitialPairEvent(ev){
   const card = hand.find(c=>c.id===id);
   if(!card || card.joker) return;
 
+  // 同じカードをもう一度押したら選択解除。
+  if(initialPairSelectedId === id){
+    initialPairSelectedId = null;
+    updateInitialPairSelectionUI();
+    return;
+  }
+
   if(initialPairSelectedId && initialPairSelectedId !== id){
     const first = hand.find(c=>c.id===initialPairSelectedId);
     if(first && !first.joker && first.rank === card.rank){
@@ -1020,9 +1081,11 @@ function handleInitialPairEvent(ev){
       return;
     }
   }
+
   initialPairSelectedId = id;
-  renderHand();
+  updateInitialPairSelectionUI();
 }
+
 document.addEventListener('pointerup', handleInitialPairEvent);
 document.addEventListener('click', handleInitialPairEvent);
 
@@ -1281,6 +1344,64 @@ function renderLastTrick(){
 
 
 
+
+function updatePassSelectionUI(){
+  const hand = me()?.hand || [];
+  passSelectedIds = passSelectedIds.filter(id=>hand.some(c=>c.id===id));
+  const count = passSelectedIds.length;
+
+  document.querySelectorAll('[data-pass-card-id]').forEach(btn=>{
+    const id = btn.dataset.passCardId;
+    const selected = passSelectedIds.includes(id);
+    btn.classList.toggle('pass-selected', selected);
+  });
+
+  const countEl = document.getElementById('passCount');
+  if(countEl) countEl.textContent = `${count}/3`;
+
+  const submit = document.querySelector('[data-pass-submit]');
+  if(submit) submit.disabled = count !== 3;
+}
+
+function updateInitialPairSelectionUI(){
+  const hand = me()?.hand || [];
+  const selected = initialPairSelectedId && hand.some(c=>c.id===initialPairSelectedId) ? initialPairSelectedId : null;
+  if(!selected) initialPairSelectedId = null;
+  const selectedCard = selected ? hand.find(c=>c.id===selected) : null;
+
+  document.querySelectorAll('[data-initial-card-id]').forEach(btn=>{
+    const id = btn.dataset.initialCardId;
+    const card = hand.find(c=>c.id===id);
+    const isSelected = selected === id;
+    const isCandidate = !!(selectedCard && card && !card.joker && id !== selected && card.rank === selectedCard.rank);
+    const isDim = !!(selectedCard && !isCandidate && !isSelected);
+    btn.classList.toggle('initial-selected', isSelected);
+    btn.classList.toggle('initial-candidate', isCandidate);
+    btn.classList.toggle('initial-dim', isDim);
+  });
+}
+
+function updatePickTargetSelectionUI(){
+  const pp = state?.pendingPick;
+  const hand = me()?.hand || [];
+  const need = Math.min(Number(pp?.targetCount || 0), hand.length);
+  pickTargetSelectedIds = pickTargetSelectedIds.filter(id=>hand.some(c=>c.id===id));
+  const count = pickTargetSelectedIds.length;
+
+  document.querySelectorAll('[data-pick-target-card-id]').forEach(btn=>{
+    const id = btn.dataset.pickTargetCardId;
+    btn.classList.toggle('selected', pickTargetSelectedIds.includes(id));
+    const label = btn.querySelector('.small');
+    if(label) label.textContent = pickTargetSelectedIds.includes(id) ? '候補' : '選ぶ';
+  });
+
+  const countEl = document.getElementById('pickTargetCountText');
+  if(countEl) countEl.textContent = `${count}/${need}`;
+
+  const submit = document.querySelector('[data-pick-target-submit]');
+  if(submit) submit.disabled = count !== need;
+}
+
 function updatePickScreenStatus(pp){
   if(!pp) return;
   if(pp.targetSelectionRequired && !pp.targetSelectionDone) return;
@@ -1313,8 +1434,7 @@ function renderTable(){
     const ready=isPickReady(pp);
     const waitSec=pickRemainingSeconds(pp);
     const isTargetSelecting = pp.targetSelectionRequired && !pp.targetSelectionDone;
-    const targetSelectedKey = isTargetSelecting && state.yourIndex===pp.weakestPid ? pickTargetSelectedIds.slice().sort().join(',') : '';
-    const mode = isTargetSelecting ? `target:${pp.weakestPid}:${pp.targetCount}:${state.yourIndex===pp.weakestPid?'me':'wait'}:${targetSelectedKey}`
+    const mode = isTargetSelecting ? `target:${pp.weakestPid}:${pp.targetCount}:${state.yourIndex===pp.weakestPid?'me':'wait'}`
       : pp.result ? 'result'
       : pp.pairChoice ? `pair:${pp.pairChoice.drawn?.id || ''}:${pp.pairChoice.candidateCount || 0}:${state.yourIndex===pp.winnerPid?'me':'wait'}`
       : `pick:${pp.winnerPid}:${pp.weakestPid}:${pp.targetCandidateCount || l.handCount}:${state.yourIndex===pp.winnerPid?'me':'wait'}`;
@@ -1339,7 +1459,7 @@ function renderTable(){
         const hand = me()?.hand || [];
         pickTargetSelectedIds = pickTargetSelectedIds.filter(id=>hand.some(c=>c.id===id));
         const count = pickTargetSelectedIds.length;
-        html += `<div class="pick-status" id="pickStatus">あなたがピック候補を選びます。<b>${count}/${need}</b>枚</div>`;
+        html += `<div class="pick-status" id="pickStatus">あなたがピック候補を選びます。<b id="pickTargetCountText">${count}/${need}</b>枚</div>`;
         html += `<div class="pick-target-panel"><div class="pick-target-cards">`;
         for(const c of hand){
           const selected = pickTargetSelectedIds.includes(c.id);
@@ -1440,7 +1560,7 @@ function renderHand(){
     note = `<div class="pass-panel">
       <h3>🔁 3枚パス</h3>
       <div class="pass-route"><span>あなた</span><b>→</b><span>${esc(targetName)}</span><span class="small">${esc(sourceName)}から受け取り</span></div>
-      ${done ? `<div class="small">確定済み。待機中です。</div>` : `<div class="pass-actions"><span class="pass-count">${count}/3</span><button type="button" class="btn" ${count===3?'':'disabled'} data-pass-submit="1">3枚を渡す</button></div><div class="small">ババブタは選べません。</div>`}
+      ${done ? `<div class="small">確定済み。待機中です。</div>` : `<div class="pass-actions"><span class="pass-count" id="passCount">${count}/3</span><button type="button" class="btn" ${count===3?'':'disabled'} data-pass-submit="1">3枚を渡す</button></div><div class="small">ババブタは選べません。</div>`}
     </div>`;
   } else if(state?.phase === 'initialPair'){
     const done = Array.isArray(state.initialPairDone) && state.initialPairDone.includes(state.yourIndex);
