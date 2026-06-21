@@ -241,7 +241,7 @@ function cpuLineFor(room, pid, type, ctx={}){
   const round = room.round || 1;
 
   if(ch.key==='kamomodoki'){
-    // 見た目：赤背景のドット絵ゴリラ。圧が強く、攻撃性と急なウホウホ感で卓を荒らす。
+    // 赤背景ドットゴリラ風。攻撃的で圧が強いが、豚語は使わない。
     if(type==='playLeadHigh') return sample([
       `赤信号、点灯です♡ ${cardTextShort}で下家のデスロード開通♡`,
       'マストフォローは祝福です♡ さあ、逃げ道を塞ぎます♡',
@@ -268,7 +268,7 @@ function cpuLineFor(room, pid, type, ctx={}){
       'ウホッウホッ、別スートで嫌がらせです♡'
     ]);
     if(type==='pickWin') return sample([
-      `${target}の袋、赤く光ってますね♡ ババブタの匂いです♡`,
+      `${target}の袋、赤く光ってますね♡ 危険札の匂いです♡`,
       'ピックは処刑です♡ マストフォローより甘い罰です♡',
       'ウホッ…その袋、失点が詰まってそうです♡'
     ]);
@@ -279,12 +279,12 @@ function cpuLineFor(room, pid, type, ctx={}){
     ]);
     if(type==='targetSelect') return sample([
       '候補を絞る？ では一番嫌な袋にします♡',
-      'ババブタを混ぜたい…混ぜたいですね♡',
+      '危険札を混ぜたい…混ぜたいですね♡',
       '下家のデスロード候補、厳選します♡'
     ]);
     if(type==='resultJoker') return sample([
-      `出ました♡ ${drawnText || 'ババブタ'}、最高の赤信号です♡`,
-      'ウホッ！ババブタ直撃、蜜の味です♡',
+      `出ました♡ ${drawnText || '危険札'}、最高の赤信号です♡`,
+      'ウホッ！直撃、蜜の味です♡',
       '事故は美しい♡ その失点、輝いてます♡'
     ]);
     if(type==='resultPair') return sample([
@@ -301,7 +301,7 @@ function cpuLineFor(room, pid, type, ctx={}){
   }
 
   if(ch.key==='wakumodoki'){
-    // 見た目：赤帽子・丸メガネ・明るい表情。根拠なくいける気がして大胆に卓を揺らす。
+    // 赤帽子・丸メガネの明るい自信家。大胆だが豚語は使わない。
     if(type==='playLeadHigh') return sample([
       `やるぞぉ〜✊🏻 ${cardTextShort}で主役を取りに行く！`,
       'できるぞぉ〜✊🏻 ここはドーンといく！',
@@ -329,7 +329,7 @@ function cpuLineFor(room, pid, type, ctx={}){
     ]);
     if(type==='pickWin') return sample([
       `${target}から引くぞぉ〜✊🏻 私なら当たりを引ける！`,
-      'ババブタでも乗りこなす！できるぞぉ〜✊🏻',
+      '危険札でも乗りこなす！できるぞぉ〜✊🏻',
       'あたしゃ、魔神だよ…この袋、開けます。'
     ]);
     if(type==='pickWatch') return sample([
@@ -344,7 +344,7 @@ function cpuLineFor(room, pid, type, ctx={}){
     ]);
     if(type==='resultJoker') return sample([
       'えっ、でも私ならできるぞぉ〜✊🏻',
-      'ババブタ？ 私なら飼える！たぶん！',
+      '危険札？ 私なら扱える！たぶん！',
       'あたしゃ、魔神だよ…いや、今ちょっと人間かも…'
     ]);
     if(type==='resultPair') return sample([
@@ -361,7 +361,7 @@ function cpuLineFor(room, pid, type, ctx={}){
   }
 
   if(ch.key==='rikumodoki'){
-    // 見た目：白い犬。穏やかで堅実、PMとして進捗・締切・リスクを管理する。
+    // 白い犬の堅実PM。進捗・締切・リスク管理で話す。豚語は使わない。
     if(type==='playLeadHigh') return sample([
       `進捗上、${cardTextShort}で主導権を取ります。`,
       'リスクはありますが、ここは取得が妥当です。',
@@ -404,7 +404,7 @@ function cpuLineFor(room, pid, type, ctx={}){
     ]);
     if(type==='resultJoker') return sample([
       '想定外です。リカバリープランを立てます。',
-      'ババブタですか…進捗に影響があります。',
+      '危険札ですか…進捗に影響があります。',
       '計画が崩れました。いったん落ち着きます。'
     ]);
     if(type==='resultPair') return sample([
@@ -433,41 +433,43 @@ function cpuPlayLine(room, pid, card){
 
   if(!leadSuit){
     const t = card.val >= 11 ? 'playLeadHigh' : 'playLeadLow';
-    return cpuLineFor(room, pid, t, {card}) || sample(['まずは様子見でいくブヒ。','小さく入って様子を見るブヒ。','ここは安全運転ブヒ。']);
+    return cpuLineFor(room, pid, t, {card}) || sample(['まずは様子見でいく。','小さく入って様子を見る。','ここは安全運転。']);
   }
 
   if(card.suit !== leadSuit){
     return cpuLineFor(room, pid, 'offSuit', {card}) || (jokerInHand
-      ? sample(['スートがない！ババブタを隠して逃げるブヒ…','ここは別スートでかわすブヒ。ババブタだけは出せない！'])
-      : sample(['そのスート持ってないブヒ！','自由に出せるならこれでいくブヒ。']));
+      ? sample(['スートがない！ババブタを隠して逃げる…','ここは別スートでかわす。ババブタだけは出せない！'])
+      : sample(['そのスート持ってない！','自由に出せるならこれでいく。']));
   }
 
   const currentHigh = room.trick.filter(x=>x.card.suit===leadSuit).reduce((m,x)=>Math.max(m,x.card.val),0);
-  if(card.val > currentHigh && card.val >= 10) return cpuLineFor(room, pid, 'followWin', {card}) || sample(['ここでそれを出すブヒ！ごちそう狙い！','勝てるなら勝つしかないブヒ！']);
-  if(card.val <= 5) return cpuLineFor(room, pid, 'followLow', {card}) || sample(['低めで耐えるブヒ…','これで最弱にならないといいブヒ…']);
-  return cpuLineFor(room, pid, 'normal', {card}) || sample(['マストフォロー、了解ブヒ。','このカードでついていくブヒ。']);
+  if(card.val > currentHigh && card.val >= 10) return cpuLineFor(room, pid, 'followWin', {card}) || sample(['ここでそれを出す！ごちそう狙い！','勝てるなら勝つしかない！']);
+  if(card.val <= 5) return cpuLineFor(room, pid, 'followLow', {card}) || sample(['低めで耐える…','これで最弱にならないといい…']);
+  return cpuLineFor(room, pid, 'normal', {card}) || sample(['マストフォロー、了解。','このカードでついていく。']);
 }
 
 
 function cpuPickLine(room, winnerPid, weakestPid){
   const wp=room.players[winnerPid], lp=room.players[weakestPid];
-  if(wp.cpu) return cpuLineFor(room, winnerPid, 'pickWin', {target:lp.name}) || sample([`さて、${lp.name}の袋をのぞくブヒ…`,`そこにババブタいないでほしいブヒ…`]);
+  if(wp.cpu) return cpuLineFor(room, winnerPid, 'pickWin', {target:lp.name}) || sample([`さて、${lp.name}の袋をのぞく…`,`そこにババブタいないでほしい…`]);
   const cpu = room.players.find((p,i)=>p.cpu && i!==winnerPid);
-  if(cpu){ const idx = room.players.indexOf(cpu); say(room, idx, cpuLineFor(room, idx, 'pickWatch', {winner:wp.name,target:lp.name}) || sample(['このピック、空気が重いブヒ…','ババブタの気配がするブヒ…'])); }
+  if(cpu){ const idx = room.players.indexOf(cpu); say(room, idx, cpuLineFor(room, idx, 'pickWatch', {winner:wp.name,target:lp.name}) || sample(['このピック、空気が重い…','ババブタの気配がする…'])); }
   return null;
 }
 
 
+
 function resultLine(drawn, paired, room=null, pid=null){
   if(room && pid != null){
-    if(drawn.joker) return cpuLineFor(room, pid, 'resultJoker', {drawn, paired}) || sample(['うわー！ババブタ来たブヒ！！','最悪の1枚を引いたブヒ…！']);
-    if(paired) return cpuLineFor(room, pid, 'resultPair', {drawn, paired}) || sample(['おそろいペア！これはうまいブヒ！','ナイス浄化ブヒ！手札が軽くなった！']);
+    if(drawn.joker) return cpuLineFor(room, pid, 'resultJoker', {drawn, paired}) || sample(['危険札を引きました。これは痛い展開です。','最悪の1枚です。空気が変わりました。']);
+    if(paired) return cpuLineFor(room, pid, 'resultPair', {drawn, paired}) || sample(['おそろいペア！これはうまい。','ナイス浄化。手札が軽くなりました。']);
   }
-  if(drawn.joker) return sample(['うわー！ババブタ来たブヒ！！','最悪の1枚を引いたブヒ…！','これはきついブヒ、完全に事故ブヒ！']);
-  if(paired) return sample(['おそろいペア！これはうまいブヒ！','ナイス浄化ブヒ！手札が軽くなった！','そのペアは気持ちいいブヒ〜！']);
-  if(drawn.val >= 11) return sample(['強いカードを拾ったブヒ。これは得かも？','高いカード、あとで効きそうブヒ。']);
-  return sample(['まあまあの1枚ブヒ。','とりあえず手札に入れておくブヒ。','微妙だけどババブタじゃないだけセーフブヒ。']);
+  if(drawn.joker) return sample(['危険札を引きました。これは痛い展開です。','最悪の1枚です。空気が変わりました。','完全に事故です。']);
+  if(paired) return sample(['おそろいペア！これはうまい。','ナイス浄化。手札が軽くなりました。','そのペアは気持ちいい展開です。']);
+  if(drawn.val >= 11) return sample(['強いカードを拾いました。これは効きそうです。','高いカード、後半で存在感が出そうです。']);
+  return sample(['まずまずの1枚です。','とりあえず手札に入れておきます。','危険札ではないだけ助かりました。']);
 }
+
 
 function publicState(room, viewerId){
   const viewerIndex = room.players.findIndex(p=>p.id===viewerId);
@@ -763,11 +765,11 @@ function addCpu(room, requesterId){
   if(room.phase !== 'lobby') return;
   if(room.players.length >= 4) { room.message='この部屋は満員です。'; broadcast(room); return; }
   const used = new Set(room.players.filter(p=>p.cpu).map(p=>p.cpuCharacter?.key || cpuCharacterByName(p.name)?.key));
-  const ch = CPU_CHARACTERS.find(c=>!used.has(c.key)) || {key:`cpu-${uid()}`, name:`CPUブタ${room.players.length}`, avatar:'🐷'};
+  const ch = CPU_CHARACTERS.find(c=>!used.has(c.key)) || {key:`cpu-${uid()}`, name:`CPU${room.players.length}`, avatar:'🐷'};
   const player = {id:`CPU-${uid()}`, name:ch.name, ws:null, cpu:true, cpuCharacter:ch, hand:[], scorePile:[], pairs:[], out:false};
   room.players.push(player);
   log(room, `${player.name} を追加しました。`);
-  say(room, room.players.length-1, ch.catchphrase || 'よろしくブヒ。');
+  say(room, room.players.length-1, ch.catchphrase || 'よろしくお願いします。');
   room.message='CPUを追加しました。4人そろったら開始できます。';
   broadcast(room);
 }
@@ -1281,7 +1283,7 @@ function startGame(room, requesterId){
   room.lastHumanTurnRebroadcastAt = 0; room.lastNoPlayableRebroadcastAt = 0;
   for(const p of room.players){ p.hand=[]; p.scorePile=[]; p.pairs=[]; p.out=false; p.final=null; }
   dealInitial(room);
-  log(room, `ぶひぶひ収穫祭スタート！${roomOptionSummary(room)}。通常カードを1枚抜き、全員13枚で開始します。`);
+  log(room, `収穫祭スタート！${roomOptionSummary(room)}。通常カードを1枚抜き、全員13枚で開始します。`);
 
   if(room.passThreeEnabled){
     room.phase='passing';
@@ -1397,7 +1399,7 @@ function finishPassThreePhase(room){
   room.passDone = [];
   assertUniqueActiveCards(room, '3枚パス完了後');
 
-  log(room, '🔁 全員が次の手番の人へ3枚パスしました！ 手札がぐるっと動いたブヒ！');
+  log(room, '🔁 全員が次の手番の人へ3枚パスしました！ 手札がぐるっと動きました！');
 
   if(room.initialPairDiscardEnabled){
     room.phase='initialPair';
@@ -1458,7 +1460,7 @@ function beginPlayingAfterSetup(room){
   room.current=room.lead;
   room.roundStart = {round:1, text:`第1ラウンド開始！全${room.totalRounds || 3}ラウンド。3枚パス${room.passThreeEnabled ? 'あり' : 'なし'}。開始時ペア捨て${room.initialPairDiscardEnabled ? 'あり' : 'なし'}。`, expiresAt:Date.now()+6500};
   room.message=`第1ラウンド開始。${room.players[room.current].name} からリード。`;
-  log(room, '🎬 第1ラウンドを開始します。ぶひぶひ勝負スタート！');
+  log(room, '🎬 第1ラウンドを開始します。勝負スタート！');
   if(checkRoundEnd(room)) { broadcast(room); return; }
   broadcast(room);
 }
@@ -1672,8 +1674,8 @@ function resolveTrick(room){
     expiresAt:reviewUntil + 5000
   };
 
-  if(wp.cpu) say(room, winner.pid, sample(['よし、ごちそう山ゲットだブヒ！','勝ったけど、このあとが怖いブヒ…','取った！でもピックが本番ブヒ。']));
-  if(lp.cpu && lp.hand.length>0) say(room, weakest.pid, sample(['えっ、最弱！？やめてブヒ〜！','うわっ、きついな〜。袋を見ないでブヒ！','最弱になったブヒ…嫌な予感しかしないブヒ。']));
+  if(wp.cpu) say(room, winner.pid, sample(['よし、ごちそう山ゲットだ！','勝ったけど、このあとが怖い…','取った！でもピックが本番。']));
+  if(lp.cpu && lp.hand.length>0) say(room, weakest.pid, sample(['えっ、最弱！？やめて〜！','うわっ、きついな〜。袋を見ないで！','最弱になった…嫌な予感しかしない。']));
   wp.scorePile.push(...room.trick.map(x=>x.card));
   log(room, `👑 ${wp.name} が勝利。場の4枚をごちそう山へ。`);
   log(room, `💀 最弱は ${lp.name}（${cardText(weakest.card)}）。`);
@@ -1797,7 +1799,7 @@ function submitPickTargets(room, playerId, cardIds, silent=false){
   pp.readyAt = Date.now() + 900;
   room.message = `${lp.name} がピック候補を${ids.length}枚に絞りました。${wp.name} が選びます。`;
   log(room, `🎯 ${lp.name} がピック候補を${ids.length}枚に絞りました。`);
-  if(!silent && lp.cpu) say(room, pp.weakestPid, 'この中から選ぶブヒ…！');
+  if(!silent && lp.cpu) say(room, pp.weakestPid, 'この中から選ぶ…！');
   const line = cpuPickLine(room, pp.winnerPid, pp.weakestPid); if(line) say(room, pp.winnerPid, line);
   ensureCpuPick(room);
   broadcast(room);
@@ -2063,7 +2065,7 @@ function checkRoundEnd(room){
     room.message = onlyJoker
       ? `${out.name} の袋にババブタ1枚だけが残りました！ゲーム終了。`
       : `${out.name} が上がり！ゲーム終了。`;
-    if(out.cpu) say(room, outPid, onlyJoker ? sample(['ババブタだけ残ったブヒ…終わったブヒ…','袋の中がババブタだけブヒ！？']) : sample(['上がり！ごちそう山を数えるブヒ！','決着ブヒ！点数計算だブヒ！']));
+    if(out.cpu) say(room, outPid, onlyJoker ? sample(['ババブタだけ残った…終わった…','袋の中がババブタだけ！？']) : sample(['上がり！ごちそう山を数える！','決着！点数計算だ！']));
     log(room, room.message);
     score(room);
   }

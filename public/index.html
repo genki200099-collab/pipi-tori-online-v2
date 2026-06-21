@@ -1057,6 +1057,48 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
   }
 }
 
+
+/* --- 全体ちらつき対策：過剰な再アニメーションを抑制 --- */
+.table-commentary.speech-mode,
+.speech-bubble,
+.speech-bubble.latest,
+.player-speech,
+.pick-stage,
+.round-start,
+.cardbox,
+.playing-card,
+.hand-card.pass-selected .playing-card,
+.hand-card.initial-selected .playing-card,
+.pick-target-card.selected .playing-card{
+  animation:none!important;
+}
+.hero:after,
+.pass-panel:after,
+.initial-pair-panel:after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+}
+.speech-bubble.latest{
+  filter:none!important;
+}
+.seat.current{
+  animation:none!important;
+  box-shadow:0 0 0 4px rgba(255,212,59,.38),0 0 20px rgba(212,165,54,.18);
+}
+.pick-big-arrow{
+  animation:none!important;
+}
+.play-trail .trail-step.current{
+  animation:none!important;
+}
+.playing-card,
+.cpu-avatar-img,
+.commentary-avatar{
+  backface-visibility:hidden;
+  transform:translateZ(0);
+}
+
 </style>
 </head>
 <body>
@@ -1158,6 +1200,8 @@ let initialPairSelectedId=null;
 let passSelectedIds=[];
 let pickTargetSelectedIds=[];
 let __lastPickReady=false;
+let __lastCommentaryRenderKey='';
+let __lastPlayersRenderKey='';
 const suitsClass={'♠':'spades','♥':'hearts','♦':'diamonds','♣':'clubs'};
 const art={'♥':'🐷💗','♦':'🐷🍎','♣':'🐷🌽','♠':'🐷🌙'};
 const faces=['🐷','🐽','🐖','🐗'];
@@ -1625,10 +1669,14 @@ function renderRoundModal(){
 }
 
 
+
 function renderCommentary(){
   const el=$('tableCommentary');
   if(!el) return;
   const list=(state.commentary||[]).slice(0,3);
+  const key = list.map(c=>`${c.pid}:${c.text}:${c.expiresAt||''}`).join('|');
+  if(key === __lastCommentaryRenderKey) return;
+  __lastCommentaryRenderKey = key;
   if(!list.length){ el.innerHTML=''; return; }
   const avatar = (c)=> c.avatarImage
     ? `<img src="${escAttr(c.avatarImage)}" alt="${escAttr(c.name)}" class="commentary-avatar">`
@@ -1647,8 +1695,18 @@ function renderCommentary(){
 
 
 
+
+
 function renderPlayers(){
   const order = gridDisplayOrder();
+  const key = order.map(i=>{
+    const p=state.players[i];
+    if(!p) return 'x';
+    return [i,p.name,p.cpuKey,p.avatarImage,p.connected,p.handCount,p.scorePileCount,p.pairsCount,state.current===i,p.id===state.you,p.lastComment?.text||''].join(':');
+  }).join('|');
+  if(key === __lastPlayersRenderKey) return;
+  __lastPlayersRenderKey = key;
+
   $('players').innerHTML = order.map(i=>{
     const p=state.players[i]; if(!p) return '';
     const turn = state.current===i ? '<span class="turn-mini">手番</span>' : '';
@@ -1663,6 +1721,7 @@ function renderPlayers(){
     </div>`;
   }).join('');
 }
+
 
 
 
@@ -2070,14 +2129,14 @@ function renderScore(){
   const finalReason = state.finalRoundSummary ? `<div class="final-comment"><b>第${state.finalRoundSummary.round || state.round}ラウンド終了理由：</b>${esc(state.finalRoundSummary.reasonText)}</div>` : '';
 
   const comment = win.final.total===last.final.total
-    ? '全員同点！これはもう全員でブヒブヒ拍手です。'
+    ? '全員同点！これはもう全員で拍手です。'
     : `${esc(win.name)} がごちそうを一番うまく集めました！ ${esc(last.name)} はババブタと次回リベンジ。`;
 
   $('score').innerHTML=`
     <div class="final-stage">
       <div class="final-hero">
         <div class="crown">🏆🐷🏆</div>
-        <h3>ぶひぶひ収穫祭、優勝は…</h3>
+        <h3>収穫祭、優勝は…</h3>
         <div class="winner-name">${esc(win.name)}</div>
         <div class="winner-score">${win.final.total} 点</div>
       </div>
