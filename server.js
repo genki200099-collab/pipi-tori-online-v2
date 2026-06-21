@@ -131,15 +131,26 @@ function sortHand(h){
   });
 }
 function log(room, text){ room.log.unshift({time:new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'}), text}); room.log = room.log.slice(0,80); }
+
 function say(room, pid, text){
-  const p = room.players[pid]; if(!p) return;
-  const item = {pid, name:p.name, text, expiresAt: Date.now()+8500};
+  const p = room.players[pid]; if(!p || !text) return;
+  const ch = cpuCharacter(p);
+  const item = {
+    pid,
+    name:p.name,
+    text,
+    cpuKey: ch?.key || null,
+    avatar: cpuAvatar(p),
+    avatarImage: ch?.imagePath || null,
+    expiresAt: Date.now()+9000
+  };
   p.lastComment = item;
   room.commentary = room.commentary || [];
   room.commentary.unshift(item);
   room.commentary = room.commentary.slice(0,8);
   log(room, `💬 ${p.name}「${text}」`);
 }
+
 
 function isRoundEndHand(p){
   return !!p && (p.hand.length===0 || (p.hand.length===1 && p.hand[0].joker));
@@ -150,11 +161,25 @@ function activePlayerCount(room){
 function safeBroadcast(room){
   try { broadcast(room); } catch(e) { console.error('safeBroadcast error', e); }
 }
+
 function safeFinishBecauseNoPlayable(room, pid){
   const p = room.players[pid];
   if(!p) return false;
   if(isRoundEndHand(p)){
-    log(room, `⚠️ ${p.name} の手札が終了条件を満たしたため、ラウンド終了処理へ進みます。`);
+    if(activeTrickInProgress(room)){
+      rememberEndAfterTrick(room, pid);
+      // すでにカードを出したプレイヤーなら、現在のトリックを続けられる。
+      const alreadyPlayed = room.trick && room.trick.some(x=>x.pid===pid);
+      if(alreadyPlayed){
+        room.current = (pid + 1) % room.players.length;
+        broadcast(room);
+        return true;
+      }
+      // まだこのトリックでカードを出していないのに出せるカードがない場合は、トリック継続不能なので終了処理へ。
+      log(room, `⚠️ ${p.name} がトリック中に出せるカードを持たないため、ラウンド終了処理へ進みます。`);
+    } else {
+      log(room, `🏁 ${p.name} の手札が終了条件を満たしたため、ラウンド終了処理へ進みます。`);
+    }
     room.pendingPick = null;
     room.trickReview = null;
     checkRoundEnd(room);
@@ -164,40 +189,286 @@ function safeFinishBecauseNoPlayable(room, pid){
   return false;
 }
 
+
+
+const CPU_CHARACTERS = [
+  {
+    key:'kamomodoki',
+    name:'かももどき',
+    avatar:'🦆', imagePath:'/cpu_characters/kamomodoki.jpg',
+    gender:'female',
+    style:'attack',
+    catchphrase:'マストフォローは祝福です♡',
+    motto:['人の不幸は蜜の味','下家のデスロード']
+  },
+  {
+    key:'wakumodoki',
+    name:'ワクもどき',
+    avatar:'✊🏻', imagePath:'/cpu_characters/wakumodoki.jpg',
+    gender:'female',
+    style:'bold',
+    catchphrase:'やるぞぉ〜✊🏻',
+    motto:['できるぞぉ〜✊🏻','あたしゃ、魔神だよ…']
+  },
+  {
+    key:'rikumodoki',
+    name:'リクもどき',
+    avatar:'📋', imagePath:'/cpu_characters/rikumodoki.png',
+    gender:'male',
+    style:'steady',
+    catchphrase:'進捗確認します。',
+    motto:['締切厳守','計画通りに進めましょう']
+  }
+];
+
+function cpuCharacterByName(name){
+  return CPU_CHARACTERS.find(c=>c.name===name) || null;
+}
+function cpuCharacter(player){
+  if(!player || !player.cpu) return null;
+  return player.cpuCharacter || cpuCharacterByName(player.name) || null;
+}
+function cpuAvatar(player){
+  return cpuCharacter(player)?.avatar || '🐷';
+}
+function cpuLineFor(room, pid, type, ctx={}){
+  const p = room.players[pid];
+  const ch = cpuCharacter(p);
+  if(!ch) return null;
+  const target = ctx.target || '相手';
+  const cardTextShort = ctx.card ? cardText(ctx.card) : '';
+  const drawnText = ctx.drawn ? cardText(ctx.drawn) : '';
+  const round = room.round || 1;
+
+  if(ch.key==='kamomodoki'){
+    // 見た目：赤背景のドット絵ゴリラ。圧が強く、攻撃性と急なウホウホ感で卓を荒らす。
+    if(type==='playLeadHigh') return sample([
+      `赤信号、点灯です♡ ${cardTextShort}で下家のデスロード開通♡`,
+      'マストフォローは祝福です♡ さあ、逃げ道を塞ぎます♡',
+      'ウホッウホッ！高火力で殴ります♡'
+    ]);
+    if(type==='playLeadLow') return sample([
+      'まずは小さな不幸を仕込みます♡',
+      'この一歩が下家のデスロードになります♡',
+      '人の不幸は蜜の味…まだ前菜です♡'
+    ]);
+    if(type==='followWin') return sample([
+      `勝ち筋、いただきます♡ ${cardTextShort}で圧をかけます♡`,
+      'マストフォローは祝福です♡ 祝福という名の強制です♡',
+      'そこ、逃げ道ありませんよ♡ ウホッ♡'
+    ]);
+    if(type==='followLow') return sample([
+      'ここは低く耐えて、次の誰かを地獄へ送ります♡',
+      '最弱回避です♡ 人の不幸を待つ時間も甘い♡',
+      'ウホッ、しゃがんでから殴るタイプです♡'
+    ]);
+    if(type==='offSuit') return sample([
+      'フォロー不能？ では自由に呪いを置きます♡',
+      '下家のデスロード、舗装しておきますね♡',
+      'ウホッウホッ、別スートで嫌がらせです♡'
+    ]);
+    if(type==='pickWin') return sample([
+      `${target}の袋、赤く光ってますね♡ ババブタの匂いです♡`,
+      'ピックは処刑です♡ マストフォローより甘い罰です♡',
+      'ウホッ…その袋、失点が詰まってそうです♡'
+    ]);
+    if(type==='pickWatch') return sample([
+      'そのピック、誰かの不幸になりますように♡',
+      '人の不幸は蜜の味…開封の儀です♡',
+      '赤背景のゴリラも見守っています。ウホッ♡'
+    ]);
+    if(type==='targetSelect') return sample([
+      '候補を絞る？ では一番嫌な袋にします♡',
+      'ババブタを混ぜたい…混ぜたいですね♡',
+      '下家のデスロード候補、厳選します♡'
+    ]);
+    if(type==='resultJoker') return sample([
+      `出ました♡ ${drawnText || 'ババブタ'}、最高の赤信号です♡`,
+      'ウホッ！ババブタ直撃、蜜の味です♡',
+      '事故は美しい♡ その失点、輝いてます♡'
+    ]);
+    if(type==='resultPair') return sample([
+      '浄化ですか…でもデスロードはまだ続きます♡',
+      'ペア浄化、逃げ足が速いですね♡',
+      'ウホッ、消しても圧は残ります♡'
+    ]);
+    if(type==='roundEnd') return sample([
+      `第${round}ラウンド、誰かの不幸で締まりましたね♡`,
+      '終了です♡ 次のデスロードを準備しましょう♡',
+      'マストフォローは祝福でした♡'
+    ]);
+    return sample(['マストフォローは祝福です♡','人の不幸は蜜の味♡','ウホッウホッ♡']);
+  }
+
+  if(ch.key==='wakumodoki'){
+    // 見た目：赤帽子・丸メガネ・明るい表情。根拠なくいける気がして大胆に卓を揺らす。
+    if(type==='playLeadHigh') return sample([
+      `やるぞぉ〜✊🏻 ${cardTextShort}で主役を取りに行く！`,
+      'できるぞぉ〜✊🏻 ここはドーンといく！',
+      'あたしゃ、魔神だよ…この一手で空気を変える！'
+    ]);
+    if(type==='playLeadLow') return sample([
+      'やるぞぉ〜✊🏻 これは未来への布石！',
+      'この低さも私なら活かせる！できるぞぉ〜✊🏻',
+      '赤帽子の直感、信じます！'
+    ]);
+    if(type==='followWin') return sample([
+      '勝てる！私ならできるぞぉ〜✊🏻',
+      'ここで取ったら盛り上がるよね？ 取ります！',
+      'あたしゃ、魔神だよ…勝ちに行く！'
+    ]);
+    if(type==='followLow') return sample([
+      'これも計算通り！たぶん！',
+      '丸メガネは見えてます。未来が！',
+      'やるぞぉ〜✊🏻 低くても気持ちは高い！'
+    ]);
+    if(type==='offSuit') return sample([
+      '自由なら大胆にいくぞぉ〜✊🏻',
+      'フォロー不能？ むしろ見せ場！',
+      'できるぞぉ〜✊🏻 なんとかなる！'
+    ]);
+    if(type==='pickWin') return sample([
+      `${target}から引くぞぉ〜✊🏻 私なら当たりを引ける！`,
+      'ババブタでも乗りこなす！できるぞぉ〜✊🏻',
+      'あたしゃ、魔神だよ…この袋、開けます。'
+    ]);
+    if(type==='pickWatch') return sample([
+      'そのピック、めちゃくちゃ盛り上がる気がする！',
+      'やるぞぉ〜✊🏻 見届けるぞぉ〜✊🏻',
+      '大丈夫、たぶん全部うまくいく！'
+    ]);
+    if(type==='targetSelect') return sample([
+      '候補を選ぶぞぉ〜✊🏻 私の直感を信じて！',
+      'この中ならいける！できるぞぉ〜✊🏻',
+      '魔神候補セレクション、始めます。'
+    ]);
+    if(type==='resultJoker') return sample([
+      'えっ、でも私ならできるぞぉ〜✊🏻',
+      'ババブタ？ 私なら飼える！たぶん！',
+      'あたしゃ、魔神だよ…いや、今ちょっと人間かも…'
+    ]);
+    if(type==='resultPair') return sample([
+      'ペア浄化！できるぞぉ〜✊🏻',
+      'やるぞぉ〜✊🏻 手札が整った！',
+      '私、やっぱり天才かも！'
+    ]);
+    if(type==='roundEnd') return sample([
+      `第${round}ラウンド完了！次もやるぞぉ〜✊🏻`,
+      'できるぞぉ〜✊🏻 まだまだ勝てるぞぉ〜✊🏻',
+      'あたしゃ、魔神だよ…次ラウンドも任せて。'
+    ]);
+    return sample(['やるぞぉ〜✊🏻','できるぞぉ〜✊🏻','あたしゃ、魔神だよ…']);
+  }
+
+  if(ch.key==='rikumodoki'){
+    // 見た目：白い犬。穏やかで堅実、PMとして進捗・締切・リスクを管理する。
+    if(type==='playLeadHigh') return sample([
+      `進捗上、${cardTextShort}で主導権を取ります。`,
+      'リスクはありますが、ここは取得が妥当です。',
+      '白犬PM判断です。前倒しで処理します。'
+    ]);
+    if(type==='playLeadLow') return sample([
+      'まずは安全に進めます。進捗確認から入ります。',
+      '低コストで様子を見ます。締切厳守です。',
+      '計画通り、無理のない着手です。'
+    ]);
+    if(type==='followWin') return sample([
+      '勝てる見込みがあります。実行します。',
+      'ここは取得が妥当です。議事録に残します。',
+      '計画を前倒しします。'
+    ]);
+    if(type==='followLow') return sample([
+      '最弱回避を優先します。',
+      'ここは堅実に処理します。無理はしません。',
+      '締切を守るため、低リスクで進めます。'
+    ]);
+    if(type==='offSuit') return sample([
+      'フォロー不能です。想定外ですが処理します。',
+      'スコープ外です。別スートで対応します。',
+      '予定変更です。落ち着いて進めます。'
+    ]);
+    if(type==='pickWin') return sample([
+      `${target}の手札から1枚確認します。ピック工程に入ります。`,
+      'リスクを最小化して選びます。締切厳守です。',
+      'ピック担当になりました。進捗を止めません。'
+    ]);
+    if(type==='pickWatch') return sample([
+      'ピックの進捗を確認します。',
+      'この工程、リスクがありますね。',
+      '予定外の事故が起きないことを祈ります。'
+    ]);
+    if(type==='targetSelect') return sample([
+      '候補選定に入ります。リスク順に確認します。',
+      '対象範囲を絞ります。締切内に決めます。',
+      '想定外を避けるため、候補を管理します。'
+    ]);
+    if(type==='resultJoker') return sample([
+      '想定外です。リカバリープランを立てます。',
+      'ババブタですか…進捗に影響があります。',
+      '計画が崩れました。いったん落ち着きます。'
+    ]);
+    if(type==='resultPair') return sample([
+      'ペア処理完了。進捗良好です。',
+      '手札整理、完了しました。',
+      '計画通りです。'
+    ]);
+    if(type==='roundEnd') return sample([
+      `第${round}ラウンド完了。振り返りを行いましょう。`,
+      'ラウンド終了です。次工程へ進みます。',
+      '締切通りです。進捗良好。'
+    ]);
+    return sample(['進捗確認します。','締切厳守です。','計画通りに進めましょう。']);
+  }
+
+  return null;
+}
+
 function sample(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
 function cpuPlayLine(room, pid, card){
   const p = room.players[pid];
   const hand = p.hand;
   const leadSuit = room.leadSuit;
   const jokerInHand = hand.some(c=>c.joker);
+
   if(!leadSuit){
-    if(hand.length <= 3) return sample(['ここで上がりに近づくブヒ！','ごちそう山、いただきに行くブヒ！','ラストスパート、強めにいくブヒ！']);
-    if(card.val >= 12) return sample(['最初から圧をかけるブヒ！','高めで様子を見るブヒ。','これで主導権を取りたいブヒ！']);
-    return sample(['まずは様子見でいくブヒ。','小さく入って様子を見るブヒ。','ここは安全運転ブヒ。']);
+    const t = card.val >= 11 ? 'playLeadHigh' : 'playLeadLow';
+    return cpuLineFor(room, pid, t, {card}) || sample(['まずは様子見でいくブヒ。','小さく入って様子を見るブヒ。','ここは安全運転ブヒ。']);
   }
-  const hasLeadBefore = [...hand, card].some(c=>!c.joker && c.suit===leadSuit);
+
   if(card.suit !== leadSuit){
-    if(jokerInHand) return sample(['スートがない！ババブタを隠して逃げるブヒ…','ここは別スートでかわすブヒ。ババブタだけは出せない！','よし、フォロー不能。いらないカードで逃げるブヒ。']);
-    return sample(['そのスート持ってないブヒ！','自由に出せるならこれでいくブヒ。','うわっ、きついな〜。別スートで逃げるブヒ。']);
+    return cpuLineFor(room, pid, 'offSuit', {card}) || (jokerInHand
+      ? sample(['スートがない！ババブタを隠して逃げるブヒ…','ここは別スートでかわすブヒ。ババブタだけは出せない！'])
+      : sample(['そのスート持ってないブヒ！','自由に出せるならこれでいくブヒ。']));
   }
+
   const currentHigh = room.trick.filter(x=>x.card.suit===leadSuit).reduce((m,x)=>Math.max(m,x.card.val),0);
-  if(card.val > currentHigh && card.val >= 10) return sample(['まさか、ここで勝ちに行くブヒ！','ここでそれを出すブヒ！ごちそう狙い！','勝てるなら勝つしかないブヒ！']);
-  if(card.val <= 5) return sample(['低めで耐えるブヒ…','うわっ、弱いのしかないブヒ。','これで最弱にならないといいブヒ…']);
-  return sample(['マストフォロー、了解ブヒ。','このカードでついていくブヒ。','まだ勝負は分からないブヒ。']);
+  if(card.val > currentHigh && card.val >= 10) return cpuLineFor(room, pid, 'followWin', {card}) || sample(['ここでそれを出すブヒ！ごちそう狙い！','勝てるなら勝つしかないブヒ！']);
+  if(card.val <= 5) return cpuLineFor(room, pid, 'followLow', {card}) || sample(['低めで耐えるブヒ…','これで最弱にならないといいブヒ…']);
+  return cpuLineFor(room, pid, 'normal', {card}) || sample(['マストフォロー、了解ブヒ。','このカードでついていくブヒ。']);
 }
+
+
 function cpuPickLine(room, winnerPid, weakestPid){
   const wp=room.players[winnerPid], lp=room.players[weakestPid];
-  if(wp.cpu) return sample([`さて、${lp.name}の袋をのぞくブヒ…`,`そこにババブタいないでほしいブヒ…`,`勝ったのに怖い時間ブヒ。どれにするブヒ？`]);
+  if(wp.cpu) return cpuLineFor(room, winnerPid, 'pickWin', {target:lp.name}) || sample([`さて、${lp.name}の袋をのぞくブヒ…`,`そこにババブタいないでほしいブヒ…`]);
   const cpu = room.players.find((p,i)=>p.cpu && i!==winnerPid);
-  if(cpu){ const idx = room.players.indexOf(cpu); say(room, idx, sample(['このピック、空気が重いブヒ…','そこ引くの！？いや、まだ分からないブヒ！','ババブタの気配がするブヒ…'])); }
+  if(cpu){ const idx = room.players.indexOf(cpu); say(room, idx, cpuLineFor(room, idx, 'pickWatch', {winner:wp.name,target:lp.name}) || sample(['このピック、空気が重いブヒ…','ババブタの気配がするブヒ…'])); }
   return null;
 }
-function resultLine(drawn, paired){
+
+
+function resultLine(drawn, paired, room=null, pid=null){
+  if(room && pid != null){
+    if(drawn.joker) return cpuLineFor(room, pid, 'resultJoker', {drawn, paired}) || sample(['うわー！ババブタ来たブヒ！！','最悪の1枚を引いたブヒ…！']);
+    if(paired) return cpuLineFor(room, pid, 'resultPair', {drawn, paired}) || sample(['おそろいペア！これはうまいブヒ！','ナイス浄化ブヒ！手札が軽くなった！']);
+  }
   if(drawn.joker) return sample(['うわー！ババブタ来たブヒ！！','最悪の1枚を引いたブヒ…！','これはきついブヒ、完全に事故ブヒ！']);
   if(paired) return sample(['おそろいペア！これはうまいブヒ！','ナイス浄化ブヒ！手札が軽くなった！','そのペアは気持ちいいブヒ〜！']);
   if(drawn.val >= 11) return sample(['強いカードを拾ったブヒ。これは得かも？','高いカード、あとで効きそうブヒ。']);
   return sample(['まあまあの1枚ブヒ。','とりあえず手札に入れておくブヒ。','微妙だけどババブタじゃないだけセーフブヒ。']);
 }
+
 function publicState(room, viewerId){
   const viewerIndex = room.players.findIndex(p=>p.id===viewerId);
   return {
@@ -222,6 +493,7 @@ function publicState(room, viewerId){
     initialPairCandidateIds: viewerIndex >= 0 && room.phase === 'initialPair' ? initialPairCandidateIds(room.players[viewerIndex]) : [],
     roundStart: room.roundStart && room.roundStart.expiresAt > Date.now() ? room.roundStart : null,
     roundEndSummary: room.roundEndSummary || null,
+    roundEndDeferred: room.roundEndDeferred || null,
     lead: room.lead,
     current: room.current,
     leadSuit: room.leadSuit,
@@ -248,14 +520,14 @@ function publicState(room, viewerId){
       } : null
     } : null,
     players: room.players.map((p,i)=>({
-      id:p.id, name:p.name, seat:i, cpu: !!p.cpu, connected: p.cpu || (p.ws && p.ws.readyState===WebSocket.OPEN),
+      id:p.id, name:p.name, seat:i, cpu: !!p.cpu, cpuKey: cpuCharacter(p)?.key || null, avatar: cpuAvatar(p), avatarImage: cpuCharacter(p)?.imagePath || null, connected: p.cpu || (p.ws && p.ws.readyState===WebSocket.OPEN),
       handCount:p.hand.length,
       hand: p.id===viewerId || room.phase==='finished' ? p.hand : null,
       scorePileCount:p.scorePile.length,
       pairsCount:p.pairs.length,
       out:p.out || false,
       final:p.final || null,
-      lastComment: p.lastComment && p.lastComment.expiresAt > Date.now() ? p.lastComment.text : null,
+      lastComment: p.lastComment && p.lastComment.expiresAt > Date.now() ? p.lastComment : null,
     })),
     // クライアント側の判定ズレを防ぐため、出せるカードはサーバーで確定して送る。
     playableCardIds: viewerIndex >= 0 ? [...playableIds(room, viewerIndex)] : [],
@@ -442,6 +714,7 @@ function autoResolveCpuPickTargets(room, pp){
     if(room.phase !== 'playing') return;
     if(room.pendingPick !== pp || pp.result || pp.targetSelectionDone) return;
     const ids = chooseCpuPickTargetIds(room, pp.weakestPid, pp.targetCount);
+    say(room, pp.weakestPid, cpuLineFor(room, pp.weakestPid, 'targetSelect', {target:room.players[pp.winnerPid]?.name}) || '候補を選びます。');
     submitPickTargets(room, weakest.id, ids, true);
   }, 700);
 }
@@ -484,19 +757,21 @@ function joinRoom(ws, c, name, playerId=null){
   log(room, `${player.name} が参加しました。`); send(ws,'joined',{code:c, playerId:id}); broadcast(room);
 }
 
+
 function addCpu(room, requesterId){
   if(room.hostId !== requesterId) return;
   if(room.phase !== 'lobby') return;
   if(room.players.length >= 4) { room.message='この部屋は満員です。'; broadcast(room); return; }
-  const cpuNames = ['CPUブタA','CPUブタB','CPUブタC','CPUブタD'];
-  const used = new Set(room.players.map(p=>p.name));
-  const name = cpuNames.find(n=>!used.has(n)) || `CPUブタ${room.players.length}`;
-  const player = {id:`CPU-${uid()}`, name, ws:null, cpu:true, hand:[], scorePile:[], pairs:[], out:false};
+  const used = new Set(room.players.filter(p=>p.cpu).map(p=>p.cpuCharacter?.key || cpuCharacterByName(p.name)?.key));
+  const ch = CPU_CHARACTERS.find(c=>!used.has(c.key)) || {key:`cpu-${uid()}`, name:`CPUブタ${room.players.length}`, avatar:'🐷'};
+  const player = {id:`CPU-${uid()}`, name:ch.name, ws:null, cpu:true, cpuCharacter:ch, hand:[], scorePile:[], pairs:[], out:false};
   room.players.push(player);
   log(room, `${player.name} を追加しました。`);
+  say(room, room.players.length-1, ch.catchphrase || 'よろしくブヒ。');
   room.message='CPUを追加しました。4人そろったら開始できます。';
   broadcast(room);
 }
+
 function removeCpu(room, requesterId){
   if(room.hostId !== requesterId) return;
   if(room.phase !== 'lobby') return;
@@ -615,6 +890,13 @@ function advanceReviewToPick(room, reviewToken, winnerPid, weakestPid){
   clearReviewTimer(room);
   room.trickReview = null;
 
+  if(endCandidatePid(room) >= 0){
+    room.pendingPick = null;
+    checkRoundEnd(room);
+    broadcast(room);
+    return;
+  }
+
   if(lp.hand.length > 0){
     const targetCount = pickCandidateLimit(room, lp);
     const targetSelectionRequired = normalizePickTargetCount(room.pickTargetCount) > 0 && targetCount < lp.hand.length;
@@ -666,15 +948,20 @@ function ensureRoomProgress(room){
   if(room.phase !== 'playing') return;
   if(!room.players || room.players.length !== 4) return;
 
-  // 0枚/ジョーカー1枚の終了条件をいつでも拾う。
-  // pendingPickの結果表示中やtrickReview中は画面演出を優先するが、通常手番中なら即処理。
+  // 0枚/ジョーカー1枚の終了条件は、トリック中なら即終了せず、そのトリック終了後に処理する。
   if(!room.pendingPick && !room.trickReview){
-    const endPid = room.players.findIndex(isRoundEndHand);
+    const endPid = endCandidatePid(room);
     if(endPid >= 0){
-      log(room, '⚠️ 終了条件の手札を検知したため、自動でラウンド終了処理へ進みます。');
-      checkRoundEnd(room);
-      broadcast(room);
-      return;
+      if(activeTrickInProgress(room)){
+        rememberEndAfterTrick(room, endPid);
+        broadcast(room);
+        // トリックを続行できる場合は続ける。現在手番が終了条件のプレイヤーで出せない場合のみ下の復旧処理に任せる。
+      } else {
+        log(room, '🏁 終了条件の手札を検知したため、ラウンド終了処理へ進みます。');
+        checkRoundEnd(room);
+        broadcast(room);
+        return;
+      }
     }
   }
 
@@ -870,12 +1157,57 @@ function ensureCpuPick(room){
 
 
 function isCpuTurn(room){ return room.phase==='playing' && room.current!=null && room.players[room.current]?.cpu && !room.pendingPick; }
+
 function chooseCpuCard(room, pid){
   const allowed = [...playableIds(room, pid)];
-  const hand = room.players[pid].hand;
+  const player = room.players[pid];
+  const hand = player.hand;
+  const ch = cpuCharacter(player);
   const cards = allowed.map(id=>hand.find(c=>c.id===id)).filter(Boolean);
   if(!cards.length) return null;
   cards.sort((a,b)=>a.val-b.val || suits.indexOf(a.suit)-suits.indexOf(b.suit));
+
+  // かももどき：攻撃的。勝てる時は取りに行き、高い圧をかけがち。
+  if(ch?.key === 'kamomodoki'){
+    if(!room.leadSuit) return cards[cards.length-1];
+    const follow = cards.filter(c=>c.suit===room.leadSuit);
+    if(follow.length){
+      const high = room.trick.filter(x=>x.card.suit===room.leadSuit).reduce((m,x)=>Math.max(m,x.card.val),0);
+      const winners = follow.filter(c=>c.val > high).sort((a,b)=>a.val-b.val);
+      return winners[0] || follow.sort((a,b)=>b.val-a.val)[0];
+    }
+    return cards.sort((a,b)=>b.val-a.val)[0];
+  }
+
+  // ワクもどき：大胆。高いカードや勝負札を気前よく切る。
+  if(ch?.key === 'wakumodoki'){
+    if(!room.leadSuit) return Math.random()<0.7 ? cards[cards.length-1] : cards[0];
+    const follow = cards.filter(c=>c.suit===room.leadSuit);
+    if(follow.length){
+      const high = room.trick.filter(x=>x.card.suit===room.leadSuit).reduce((m,x)=>Math.max(m,x.card.val),0);
+      const winners = follow.filter(c=>c.val > high).sort((a,b)=>b.val-a.val);
+      if(winners.length && Math.random()<0.65) return winners[0];
+      return Math.random()<0.35 ? follow.sort((a,b)=>b.val-a.val)[0] : follow.sort((a,b)=>a.val-b.val)[0];
+    }
+    return Math.random()<0.5 ? cards[cards.length-1] : cards[0];
+  }
+
+  // リクもどき：堅実。基本は低く、安全に。安く勝てる時だけ取りに行く。
+  if(ch?.key === 'rikumodoki'){
+    if(!room.leadSuit){
+      if(hand.filter(c=>!c.joker).length <= 3) return cards[cards.length-1];
+      return cards[0];
+    }
+    const follow = cards.filter(c=>c.suit===room.leadSuit);
+    if(follow.length){
+      const high = room.trick.filter(x=>x.card.suit===room.leadSuit).reduce((m,x)=>Math.max(m,x.card.val),0);
+      const winners = follow.filter(c=>c.val > high).sort((a,b)=>a.val-b.val);
+      if(winners.length && winners[0].val <= high+1) return winners[0];
+      return follow.sort((a,b)=>a.val-b.val)[0];
+    }
+    return cards[0];
+  }
+
   if(!room.leadSuit){
     if(hand.filter(c=>!c.joker).length <= 3) return cards[cards.length-1];
     return cards[0];
@@ -885,26 +1217,33 @@ function chooseCpuCard(room, pid){
   const follow = cards.filter(c=>c.suit===room.leadSuit);
   if(follow.length){
     const winners = follow.filter(c=>c.val > high).sort((a,b)=>a.val-b.val);
-    // 手札が少ない時や安く勝てる時は取りにいく。そうでなければ低く逃げる。
     if(winners.length && (hand.length <= 5 || winners[0].val <= high+2 || Math.random()<0.35)) return winners[0];
     return follow.sort((a,b)=>a.val-b.val)[0];
   }
-  // フォロー不能なら、低い通常カードを捨てる。ババブタは出せない。
   return cards[0];
 }
+
+
 function scheduleCpu(room){
   if(room.cpuTimer) return;
   if(room.phase !== 'playing') return;
   if(room.trickReview && room.trickReview.until > Date.now()) return;
   const pp = room.pendingPick;
-  if(pp && room.players[pp.winnerPid]?.cpu && !pp.result){
-    ensureCpuPick(room);
-    return;
+  if(pp && !pp.result){
+    if(pp.targetSelectionRequired && !pp.targetSelectionDone){
+      autoResolveCpuPickTargets(room, pp);
+      return;
+    }
+    if(room.players[pp.winnerPid]?.cpu){
+      ensureCpuPick(room);
+      return;
+    }
   }
   if(isCpuTurn(room)){
     room.cpuTimer = setTimeout(()=>{ room.cpuTimer=null; doCpuPlay(room); }, 900);
   }
 }
+
 function doCpuPlay(room){
   if(!isCpuTurn(room)) return;
   const pid = room.current;
@@ -919,13 +1258,16 @@ function doCpuPlay(room){
     }
   }
 }
+
 function doCpuPick(room){
   const pp = room.pendingPick;
   if(!pp || pp.result || pp.pairChoice || !room.players[pp.winnerPid]?.cpu) return;
-  const weakest = room.players[pp.weakestPid];
-  if(!weakest || weakest.hand.length<=0) return;
-  doPick(room, room.players[pp.winnerPid].id, Math.floor(Math.random() * weakest.hand.length));
+  if(pp.targetSelectionRequired && !pp.targetSelectionDone) return;
+  const candidates = pickCandidateCards(room, pp);
+  if(!candidates.length) return;
+  doPick(room, room.players[pp.winnerPid].id, Math.floor(Math.random() * candidates.length));
 }
+
 
 
 
@@ -934,7 +1276,7 @@ function startGame(room, requesterId){
   if(room.players.length !== 4) { room.message='4人そろうと開始できます。足りない席はCPUを追加してください。'; broadcast(room); return; }
   clearAllProgressTimers(room);
   room.phase='playing'; room.round=1; room.lead=Math.floor(Math.random()*4); room.current=room.lead; room.trick=[]; room.leadSuit=null; room.pendingPick=null; room.trickReview=null; room.stock=[];
-  room.roundEndSummary=null; room.finalRoundSummary=null; room.roundEndOutPid=null; room.initialPairDone=[]; room.passDone=[]; room.passSelections={};
+  room.roundEndSummary=null; room.finalRoundSummary=null; room.roundEndOutPid=null; room.roundEndDeferred=null; room.initialPairDone=[]; room.passDone=[]; room.passSelections={};
   room.roundStart = null;
   room.lastHumanTurnRebroadcastAt = 0; room.lastNoPlayableRebroadcastAt = 0;
   for(const p of room.players){ p.hand=[]; p.scorePile=[]; p.pairs=[]; p.out=false; p.final=null; }
@@ -1274,6 +1616,7 @@ function playCard(room, playerId, cardId){
   assertUniqueActiveCards(room, 'カードプレイ後');
   room.message = `${p.name} が ${cardText(card)} を出しました。`;
   log(room, room.message);
+  if(isRoundEndHand(p) && room.trick.length < 4) rememberEndAfterTrick(room, pid);
   if(room.trick.length===4) resolveTrick(room); else room.current=(pid+1)%4;
   broadcast(room);
 }
@@ -1355,7 +1698,7 @@ function completePickWithoutPair(room, pp, drawn){
   pp.result = {drawn, paired:false, skipped:true, text};
   pp.resultAt = Date.now();
   log(room, `🐽 ${text}`);
-  if(wp.cpu) say(room, pp.winnerPid, resultLine(drawn, false));
+  if(wp.cpu) say(room, pp.winnerPid, resultLine(drawn, false, room, pp.winnerPid));
   room.message = text;
   broadcast(room);
   ensurePickFinish(room, pp, pp.winnerPid, 2600);
@@ -1378,10 +1721,10 @@ function completePickWithPair(room, pp, drawn, pairCard){
   pp.result = {drawn, paired:true, skipped:false, pairCard, text};
   pp.resultAt = Date.now();
   log(room, `🐽 ${text}`);
-  if(wp.cpu) say(room, pp.winnerPid, resultLine(drawn, true));
+  if(wp.cpu) say(room, pp.winnerPid, resultLine(drawn, true, room, pp.winnerPid));
   else {
     const cpu = room.players.find((p,i)=>p.cpu && i!==pp.winnerPid);
-    if(cpu){ const ci=room.players.indexOf(cpu); say(room, ci, resultLine(drawn, true)); }
+    if(cpu){ const ci=room.players.indexOf(cpu); say(room, ci, resultLine(drawn, true, room, ci)); }
   }
   room.message = text;
   assertUniqueActiveCards(room, 'ペア選択後');
@@ -1619,6 +1962,7 @@ function beginNextRound(room){
   room.trickReview = null;
   room.roundEndSummary = null;
   room.roundEndOutPid = null;
+  room.roundEndDeferred = null;
   room.lead = outPid;
   room.current = outPid;
   room.lastHumanTurnRebroadcastAt = 0;
@@ -1656,6 +2000,33 @@ function beginRound2(room){
 }
 
 
+
+function activeTrickInProgress(room){
+  return !!(room && room.phase === 'playing' && !room.pendingPick && !room.trickReview && room.trick && room.trick.length > 0 && room.trick.length < 4);
+}
+
+function endCandidatePid(room){
+  return room && room.players ? room.players.findIndex(isRoundEndHand) : -1;
+}
+
+function rememberEndAfterTrick(room, pid){
+  if(!room || pid < 0) return false;
+  if(!room.roundEndDeferred || room.roundEndDeferred.pid !== pid){
+    room.roundEndDeferred = {pid, round:room.round, trickCount:room.trick ? room.trick.length : 0, createdAt:Date.now()};
+    const p = room.players[pid];
+    const onlyJoker = p && p.hand.length===1 && p.hand[0].joker;
+    room.message = onlyJoker
+      ? `${p.name} はババブタ1枚だけになりました。このトリック終了後にラウンド終了します。`
+      : `${p.name} の手札がなくなりました。このトリック終了後にラウンド終了します。`;
+    log(room, `🏁 ${room.message}`);
+  }
+  return true;
+}
+
+function canCheckRoundEndNow(room){
+  return !!(room && room.phase === 'playing' && !activeTrickInProgress(room));
+}
+
 function checkRoundEnd(room){
   const outPid = room.players.findIndex(isRoundEndHand);
   if(outPid<0) return false;
@@ -1674,12 +2045,15 @@ function checkRoundEnd(room){
 
   const snapshot = makeRoundSnapshot(room, outPid, reasonText);
   room.roundEndOutPid = outPid;
+  room.roundEndDeferred = null;
 
   if((room.round || 1) < (room.totalRounds || 3)){
     room.roundEndSummary = snapshot;
     room.phase='roundEnd';
     room.current=null;
     room.message=`第${room.round}ラウンド終了！結果を確認してOKを押すと第${room.round+1}ラウンドへ進みます。`;
+    const cpuSpeaker = room.players.find((p,i)=>p.cpu);
+    if(cpuSpeaker){ const ci=room.players.indexOf(cpuSpeaker); say(room, ci, cpuLineFor(room, ci, 'roundEnd', {}) || 'ラウンド終了です。'); }
     log(room, room.message);
   } else {
     room.finalRoundSummary = snapshot;
@@ -1758,5 +2132,5 @@ wss.on('connection', (ws) => {
   });
 });
 
-server.listen(PORT, () => console.log(`ピピとりオンライン server listening on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`【ピピトリ】ピッグ・ピック・トリック server listening on http://localhost:${PORT}`));
 

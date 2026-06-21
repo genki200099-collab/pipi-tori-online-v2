@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>ピピとりオンライン</title>
+  <title>【ピピトリ】ピッグ・ピック・トリック</title>
   <style>
 :root{--bg:#fff6e8;--ink:#3b2118;--red:#b64040;--pink:#ffd6d6;--gold:#d4a536;--line:#efc5a5;--green:#2e8c58;--blue:#4776b8;--shadow:0 8px 24px rgba(66,36,20,.14)}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#fffaf0,#ffeeda 55%,#ffd9cf);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif;color:var(--ink)}
@@ -748,11 +748,320 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
   }
 }
 
+
+/* --- iPhone表示修正：ヘッダー装飾絵文字の重なり防止 --- */
+.hero:after{
+  content:none!important;
+  display:none!important;
+}
+
+
+.hero{
+  isolation:isolate;
+}
+
+.cpu-character-note{margin-top:4px;color:#8c503e;font-weight:800}
+
+/* --- CPUキャラクター画像 --- */
+.cpu-avatar-img{
+  width:1.35em;
+  height:1.35em;
+  border-radius:50%;
+  object-fit:cover;
+  vertical-align:middle;
+  display:inline-block;
+  box-shadow:0 0 0 2px rgba(255,255,255,.65), 0 2px 6px rgba(0,0,0,.18);
+  background:#fff;
+}
+.cpu-avatar-emoji{
+  display:inline-block;
+  line-height:1;
+}
+.hero .cpu-avatar-img,
+.status-card .cpu-avatar-img,
+.seat .cpu-avatar-img,
+.pill .cpu-avatar-img{
+  width:1.5em;
+  height:1.5em;
+}
+.pigface.cpu-avatar-img{
+  width:1.7em;
+  height:1.7em;
+  margin-right:.25em;
+}
+@media(max-width:700px){
+  .cpu-avatar-img{
+    width:1.25em;
+    height:1.25em;
+  }
+  .pigface.cpu-avatar-img{
+    width:1.5em;
+    height:1.5em;
+  }
+}
+
+
+/* --- 全体ブラッシュアップ：CPU画像とプレイヤー欄 --- */
+.player.cpu-player .pig .cpu-avatar-img,
+.player .pig .cpu-avatar-img{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  object-fit:cover;
+}
+.disconnect-mini{
+  display:inline-block;
+  border-radius:999px;
+  padding:2px 6px;
+  font-size:10px;
+  font-weight:900;
+  margin-left:3px;
+  background:#ffe1e8;
+  color:#842342;
+}
+.player .name{
+  line-height:1.25;
+}
+@media(max-width:650px){
+  .player.cpu-player .pig .cpu-avatar-img,
+  .player .pig .cpu-avatar-img{
+    width:36px;
+    height:36px;
+  }
+}
+
+
+/* --- CPU実況：吹き出し演出 --- */
+.table-commentary.speech-mode{
+  border:2px solid #f0d0aa;
+  background:linear-gradient(135deg,#fffaf2,#fff0f4);
+  border-radius:18px;
+  padding:10px;
+  box-shadow:0 8px 22px rgba(80,38,20,.08);
+}
+.table-commentary-title{
+  font-weight:1000;
+  color:#7b332e;
+  margin-bottom:8px;
+}
+.table-commentary-list{
+  display:grid;
+  gap:8px;
+}
+.speech-bubble{
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr);
+  gap:9px;
+  align-items:start;
+  animation:speechPop .28s cubic-bezier(.2,1.3,.3,1);
+}
+.speech-bubble.latest{
+  animation:speechPop .34s cubic-bezier(.2,1.45,.3,1), speechGlow 1.15s ease-out;
+}
+.speech-face{
+  width:44px;
+  height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.commentary-avatar{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid #fff;
+  box-shadow:0 3px 8px rgba(0,0,0,.2);
+  background:#fff;
+}
+.commentary-avatar.emoji{
+  font-size:28px;
+}
+.speech-body{
+  position:relative;
+  background:#fff;
+  border:2px solid #efd0b4;
+  border-radius:16px;
+  padding:8px 10px;
+  color:#3b1d14;
+}
+.speech-body:before{
+  content:'';
+  position:absolute;
+  left:-8px;
+  top:15px;
+  width:12px;
+  height:12px;
+  background:#fff;
+  border-left:2px solid #efd0b4;
+  border-bottom:2px solid #efd0b4;
+  transform:rotate(45deg);
+}
+.speech-body b{
+  color:#9a3a32;
+  font-size:13px;
+}
+.speech-body p{
+  margin:2px 0 0;
+  line-height:1.45;
+  font-weight:800;
+}
+.speech-bubble.kamomodoki .speech-body{
+  border-color:#ff7b7b;
+  background:linear-gradient(135deg,#fff,#ffe7e7);
+}
+.speech-bubble.kamomodoki .speech-body b{color:#b30000}
+.speech-bubble.wakumodoki .speech-body{
+  border-color:#ffb45f;
+  background:linear-gradient(135deg,#fff,#fff1db);
+}
+.speech-bubble.wakumodoki .speech-body b{color:#c45900}
+.speech-bubble.rikumodoki .speech-body{
+  border-color:#9fc8ff;
+  background:linear-gradient(135deg,#fff,#eef6ff);
+}
+.speech-bubble.rikumodoki .speech-body b{color:#2e5f9f}
+
+.player{
+  position:relative;
+}
+.player-speech{
+  position:absolute;
+  left:52px;
+  right:8px;
+  bottom:6px;
+  background:#fff;
+  border:2px solid #efd0b4;
+  border-radius:14px;
+  padding:5px 7px;
+  font-size:11px;
+  font-weight:900;
+  line-height:1.3;
+  max-height:42px;
+  overflow:hidden;
+  box-shadow:0 4px 10px rgba(80,38,20,.08);
+  animation:speechPop .28s cubic-bezier(.2,1.3,.3,1);
+}
+.player-speech.kamomodoki{border-color:#ff8d8d;background:#fff0f0;color:#8a1111}
+.player-speech.wakumodoki{border-color:#ffbd75;background:#fff5e8;color:#8d4300}
+.player-speech.rikumodoki{border-color:#a9ceff;background:#f1f7ff;color:#285b91}
+@keyframes speechPop{
+  from{transform:translateY(8px) scale(.96);opacity:0}
+  to{transform:translateY(0) scale(1);opacity:1}
+}
+@keyframes speechGlow{
+  0%{filter:brightness(1.14)}
+  100%{filter:brightness(1)}
+}
+@media(max-width:800px){
+  .speech-bubble{
+    grid-template-columns:38px minmax(0,1fr);
+    gap:7px;
+  }
+  .speech-face,.commentary-avatar{
+    width:36px;
+    height:36px;
+  }
+  .speech-body{
+    padding:7px 9px;
+    font-size:13px;
+  }
+  .player-speech{
+    position:static;
+    margin:6px 6px 0;
+    max-height:48px;
+  }
+}
+@media(max-width:420px){
+  .table-commentary.speech-mode{
+    padding:8px;
+  }
+  .speech-body p{
+    font-size:12px;
+  }
+}
+
+
+/* --- 詳細設定の開閉UIを目立たせる改善 --- */
+.advanced-settings{
+  margin-top:12px;
+  border:2px solid #f0bf5a;
+  border-radius:18px;
+  background:linear-gradient(135deg,#fff8e8,#fff1d9);
+  box-shadow:0 8px 18px rgba(120,80,20,.08);
+  overflow:hidden;
+}
+.advanced-settings-summary{
+  list-style:none;
+  cursor:pointer;
+  user-select:none;
+  padding:14px 16px;
+  font-weight:1000;
+  color:#8b4300;
+  background:linear-gradient(135deg,#ffe39a,#ffd27b);
+  border-bottom:2px dashed rgba(139,67,0,.18);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:16px;
+}
+.advanced-settings-summary::-webkit-details-marker{
+  display:none;
+}
+.advanced-settings-summary::before{
+  content:'▶';
+  display:inline-block;
+  font-size:14px;
+  color:#8b4300;
+  transition:transform .18s ease;
+}
+.advanced-settings[open] > .advanced-settings-summary::before{
+  transform:rotate(90deg);
+}
+.advanced-settings-summary:hover{
+  filter:brightness(1.02);
+}
+.advanced-settings-summary::after{
+  content:'タップ / クリックで開閉';
+  margin-left:auto;
+  font-size:12px;
+  font-weight:900;
+  color:#9e5a16;
+  background:rgba(255,255,255,.6);
+  border:1px solid rgba(139,67,0,.18);
+  border-radius:999px;
+  padding:5px 8px;
+}
+.advanced-settings-hint{
+  padding:10px 16px 2px;
+  color:#8b5b2d;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.5;
+}
+@media(max-width:700px){
+  .advanced-settings-summary{
+    flex-wrap:wrap;
+    font-size:15px;
+    padding:12px 14px;
+  }
+  .advanced-settings-summary::after{
+    width:100%;
+    margin-left:0;
+    text-align:center;
+    font-size:11px;
+  }
+  .advanced-settings-hint{
+    font-size:12px;
+    padding:8px 14px 0;
+  }
+}
+
 </style>
 </head>
 <body>
 <div id="app">
-  <header class="hero"><h1>🐷 ピピとりオンライン</h1><p>作成日時：2026-06-21 15:15 JST</p></header>
+  <header class="hero"><h1>🐷 【ピピトリ】ピッグ・ピック・トリック</h1><p>作成日時：2026-06-21 15:15 JST</p></header>
 
   <section id="lobby" class="cardbox">
     <h2>オンライン部屋</h2>
@@ -760,8 +1069,8 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
       <input id="name" class="input" placeholder="名前（例：ピピ）" maxlength="12" />
       <button id="create" class="btn create-btn">部屋を作る</button>
     </div>
-    <details class="settings-details">
-      <summary>詳細設定を開く <span class="small">初期設定のままでも遊べます</span></summary>
+    <details class="settings-details" class="advanced-settings"
+      <summary class="advanced-settings-summary"⚙️ 詳細設定を開く（ルールをカスタマイズ） <span class="small">初期設定のままでも遊べます</span></summary><div class="advanced-settings-hint">ラウンド数・失点方式・マッドピッグ・3枚パス・開始時ペア捨てなどを設定できます。</div>
       <div class="settings-grid">
         <label class="input-label">ラウンド数<select id="rounds" class="input"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label>
         <label class="input-label option-toggle"><span>マッド・ピッグ</span><select id="madPigEnabled" class="input"><option value="true" selected>あり</option><option value="false">なし</option></select></label>
@@ -775,7 +1084,7 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
       <input id="code" class="input" placeholder="部屋コード 例：ABCD" maxlength="4" />
       <button id="join" class="btn secondary">参加する</button><button id="reconnect" class="btn secondary reconnect-btn" style="display:none">前回の部屋に復帰</button>
     </div>
-    <p class="small settings-help">設定は部屋作成時のみ有効です。友達には部屋コードを共有してください。</p>
+    <p class="small settings-help">設定は部屋作成時のみ有効です。友達には部屋コードを共有してください。</p><p class="small cpu-character-note">CPU：かももどき / ワクもどき / リクもどき が個性つきで参加します。キャラクター画像反映済み。</p>
     <div id="roomInfo" style="display:none">
       <div class="roomcode" id="roomCode">----</div>
       <div class="row room-actions"><button id="addCpu" class="btn secondary">CPUを追加</button><button id="removeCpu" class="btn secondary">CPUを外す</button></div>
@@ -827,7 +1136,7 @@ h2{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.
           </ul>
         </div>
         <div class="rule-card">
-          <h3>得点</h3>
+          <h3>ラウンド終了</h3><ul><li>手札0枚、またはババブタ1枚だけになったら終了条件。</li><li>トリック中なら即終了せず、そのトリック終了後にラウンド終了します。</li></ul></div><div class="rule-card"><h3>得点</h3>
           <ul>
             <li>ごちそう山：+1点/枚。</li>
             <li>残り手札：1枚-3点、または数字分失点。</li>
@@ -1159,7 +1468,19 @@ function send(obj){ if(ws && ws.readyState===1) ws.send(JSON.stringify(obj)); el
 function me(){ return state?.players.find(p=>p.id===state.you); }
 function isHost(){ return state && state.you===state.hostId; }
 function playerName(i){ return state?.players[i]?.name || '-'; }
-function face(i){ return faces[i]||'🐷'; }
+function face(i){ const p=state?.players?.[i]; return p?.avatar || faces[i] || '🐷'; }
+
+
+function playerAvatarHTML(i, cls=''){
+  const p = state?.players?.[i];
+  const klass = (`cpu-avatar-img ${cls || ''}`).trim();
+  if(p?.avatarImage){
+    return `<img src="${escAttr(p.avatarImage)}" alt="${escAttr(p.name || 'CPU')}" class="${escAttr(klass)}">`;
+  }
+  const emojiClass = (`cpu-avatar-emoji ${cls || ''}`).trim();
+  return `<span class="${escAttr(emojiClass)}">${esc(face(i))}</span>`;
+}
+
 
 function penaltyModeLabel(){
   return state?.penaltyMode === 'faceValue' ? '数字分失点' : '1枚-3点';
@@ -1256,6 +1577,7 @@ function renderRoundStatus(){
   ];
   if(state.passThreeEnabled) chips.push('3枚パス');
   if(state.initialPairDiscardEnabled) chips.push('開始ペア');
+  if(state.roundEndDeferred) chips.push('トリック後終了');
 
   const start = state.roundStart ? `<div class="round-start"><div class="round-title">🐷 第${state.roundStart.round}R開始！</div><div>${esc(state.roundStart.text)}</div></div>` : '';
   el.innerHTML = `<div class="round-big">${esc(label)}</div><div class="setting-chips">${chips.map(c=>`<span>${esc(c)}</span>`).join('')}</div>${start}`;
@@ -1302,18 +1624,28 @@ function renderRoundModal(){
   </div>`;
 }
 
+
 function renderCommentary(){
   const el=$('tableCommentary');
   if(!el) return;
-  const list=(state.commentary||[]).slice(0,2);
+  const list=(state.commentary||[]).slice(0,3);
   if(!list.length){ el.innerHTML=''; return; }
-  el.innerHTML = `<div class="table-commentary">
-    <div class="table-commentary-title">🎙️ CPU実況</div>
+  const avatar = (c)=> c.avatarImage
+    ? `<img src="${escAttr(c.avatarImage)}" alt="${escAttr(c.name)}" class="commentary-avatar">`
+    : `<span class="commentary-avatar emoji">${esc(c.avatar || face(c.pid))}</span>`;
+  el.innerHTML = `<div class="table-commentary speech-mode">
+    <div class="table-commentary-title">🎙️ 卓上実況</div>
     <div class="table-commentary-list">
-      ${list.map(c=>`<div class="table-commentary-item"><div class="table-commentary-face">${face(c.pid)}</div><div class="table-commentary-text"><b>${esc(c.name)}</b><br>「${esc(c.text)}」</div></div>`).join('')}
+      ${list.map((c,idx)=>`<div class="speech-bubble ${c.cpuKey||''} ${idx===0?'latest':''}">
+        <div class="speech-face">${avatar(c)}</div>
+        <div class="speech-body"><b>${esc(c.name)}</b><p>${esc(c.text)}</p></div>
+      </div>`).join('')}
     </div>
   </div>`;
 }
+
+
+
 
 function renderPlayers(){
   const order = gridDisplayOrder();
@@ -1321,15 +1653,18 @@ function renderPlayers(){
     const p=state.players[i]; if(!p) return '';
     const turn = state.current===i ? '<span class="turn-mini">手番</span>' : '';
     const you = p.id===state.you ? '<span class="you-mini">あなた</span>' : '';
-    const cpu = p.cpu ? '<span class="cpu-badge">CPU</span>' : '';
-    return `<div class="player ${state.current===i?'active':''}">
-      <div class="pig">${face(i)}</div>
-      <div class="name">${esc(p.name)} ${you}${cpu}${turn}</div>
+    const conn = (!p.cpu && !p.connected) ? '<span class="disconnect-mini">切断中</span>' : '';
+    const last = p.lastComment?.text ? `<div class="player-speech ${p.cpuKey||''}">${esc(p.lastComment.text)}</div>` : '';
+    return `<div class="player ${state.current===i?'active':''} ${p.cpu?'cpu-player':''}">
+      <div class="pig">${playerAvatarHTML(i)}</div>
+      <div class="name">${esc(p.name)} ${you}${turn}${conn}</div>
       <div class="player-stats"><span>手札 ${p.handCount}</span><span>山 ${p.scorePileCount}</span><span>ペア ${p.pairsCount}</span></div>
-      <div class="small">${p.connected?'接続中':'切断'}</div>
+      ${last}
     </div>`;
   }).join('');
 }
+
+
 
 
 
@@ -1448,9 +1783,9 @@ function renderTable(){
     let html=`<div class="pick-stage">
       <h3>🐽 ピック</h3>
       <div class="pick-main">
-        <div class="pick-person winner"><div class="big">👑🐷</div><div>勝者</div><div>${esc(w.name)}</div></div>
+        <div class="pick-person winner"><div class="big">${playerAvatarHTML(pp.winnerPid)}</div><div>勝者</div><div>${esc(w.name)}</div></div>
         <div class="pick-big-arrow">➡<small>1枚ピック</small></div>
-        <div class="pick-person weakest"><div class="big">💀🐽</div><div>最弱</div><div>${esc(l.name)}</div></div>
+        <div class="pick-person weakest"><div class="big">${playerAvatarHTML(pp.weakestPid)}</div><div>最弱</div><div>${esc(l.name)}</div></div>
       </div>`;
 
     if(isTargetSelecting){
