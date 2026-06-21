@@ -288,3 +288,26 @@ http://localhost:3000
 - 部屋設定の長いログ文を `roomOptionSummary()` に集約
 - 数字分失点モードにおけるマッド・ピッグの得点表示を整理
 - 整合性点検メモ `CONSISTENCY_CLEANUP_AUDIT.md` を追加
+
+
+## Render Build 修正メモ
+
+Renderで `npm install` が `packages.applied-caas-gateway1.internal.api.openai.org` を見に行ってタイムアウトする問題への対策として、以下を実施しました。
+
+- `package-lock.json` を削除
+- `.npmrc` を追加し、npm公式レジストリ `https://registry.npmjs.org/` を明示
+- Node.js を `22.x` に固定
+- `ws` は通常のnpm依存として `^8.18.0` を指定
+
+Render設定は以下を推奨します。
+
+```txt
+Build Command: npm install
+Start Command: npm start
+```
+
+または
+
+```txt
+Start Command: node server.js
+```
