@@ -1322,6 +1322,847 @@ body.mobile-table-compact .tip{
   }
 }
 
+
+/* --- iPhone縦画面・Safari専用に近い卓面最適化 --- */
+@media (max-width: 640px) and (orientation: portrait){
+  html, body{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden!important;
+    overscroll-behavior-x:none;
+    -webkit-text-size-adjust:100%;
+  }
+  body{
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+  }
+  #app{
+    width:100%;
+    max-width:100vw;
+    padding:6px 6px calc(92px + env(safe-area-inset-bottom))!important;
+    overflow-x:hidden;
+  }
+  .cardbox{
+    width:100%;
+    max-width:100%;
+    box-sizing:border-box;
+    overflow:hidden;
+    border-radius:16px;
+    padding:10px!important;
+    margin:8px 0!important;
+  }
+  .cardbox > h2{
+    font-size:18px!important;
+    margin:0 0 6px!important;
+  }
+  .status{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+  }
+  .status div{
+    padding:7px 6px!important;
+    border-radius:12px!important;
+  }
+  .status b{
+    font-size:14px!important;
+    line-height:1.25!important;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .round-status{
+    padding:7px 6px!important;
+    margin-top:6px!important;
+    border-radius:14px!important;
+  }
+  .round-status .round-big{
+    font-size:16px!important;
+  }
+  .setting-chips{
+    gap:4px!important;
+    margin-top:4px!important;
+  }
+  .setting-chips span{
+    font-size:9.5px!important;
+    padding:3px 6px!important;
+  }
+
+  #table{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box;
+    overflow:hidden!important;
+    padding:6px!important;
+    border-radius:14px!important;
+  }
+  #table *{
+    box-sizing:border-box;
+  }
+  #table .turn-order-bar{
+    display:grid!important;
+    grid-template-columns:auto 1fr!important;
+    align-items:center!important;
+    gap:5px!important;
+    padding:6px!important;
+    margin:0 0 6px!important;
+    border-radius:12px!important;
+    font-size:11px!important;
+  }
+  #table .turn-order-bar .small{
+    font-size:10px!important;
+    white-space:nowrap;
+  }
+  #table .turn-order-bar .ord{
+    padding:4px 6px!important;
+    font-size:11px!important;
+    max-width:128px;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+  }
+  #table .turn-order-bar .arrowtxt{
+    font-size:12px!important;
+  }
+  #table .play-trail{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    justify-content:center!important;
+    gap:4px!important;
+    padding:6px!important;
+    margin:0 0 6px!important;
+    border-radius:12px!important;
+  }
+  #table .play-trail .trail-step{
+    font-size:10.5px!important;
+    padding:4px 6px!important;
+    max-width:120px;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+  }
+  #table .play-trail .trail-arrow{
+    font-size:12px!important;
+  }
+
+  #table .table-board{
+    display:grid!important;
+    width:100%!important;
+    max-width:100%!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    grid-template-areas:
+      "mid mid"
+      "p0 p1"
+      "p3 p2"!important;
+    gap:7px!important;
+    overflow:hidden!important;
+  }
+  #table .center-wheel{
+    width:100%!important;
+    max-width:100%!important;
+    height:auto!important;
+    min-height:42px!important;
+    border-radius:12px!important;
+    padding:7px 8px!important;
+    display:grid!important;
+    grid-template-columns:auto 1fr!important;
+    column-gap:8px!important;
+    align-items:center!important;
+    justify-items:start!important;
+    text-align:left!important;
+    box-shadow:none!important;
+  }
+  #table .center-wheel .cw-arrow{
+    font-size:18px!important;
+    line-height:1!important;
+    grid-row:1 / span 2;
+  }
+  #table .center-wheel > div:nth-child(2){
+    font-size:13px!important;
+    line-height:1.1!important;
+  }
+  #table .center-wheel .cw-small{
+    font-size:11px!important;
+    line-height:1.2!important;
+    max-width:100%;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+  }
+
+  #table .seat{
+    min-width:0!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-height:118px!important;
+    padding:7px 5px 28px!important;
+    border-radius:12px!important;
+    gap:3px!important;
+    overflow:hidden!important;
+  }
+  #table .seat.current:before{
+    top:-1px!important;
+    left:8px!important;
+    transform:none!important;
+    font-size:10px!important;
+    padding:2px 7px!important;
+    z-index:5;
+  }
+  #table .who{
+    width:100%!important;
+    max-width:100%!important;
+    padding:0 4px!important;
+    margin-top:9px!important;
+    font-size:10.5px!important;
+    line-height:1.2!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    text-align:center!important;
+  }
+  #table .play-badge{
+    top:4px!important;
+    left:4px!important;
+    font-size:9px!important;
+    padding:1px 5px!important;
+    z-index:4;
+  }
+  #table .turn-flag{
+    top:4px!important;
+    right:4px!important;
+    font-size:9px!important;
+    padding:1px 5px!important;
+    z-index:4;
+  }
+  #table .seat .small{
+    font-size:12px!important;
+    margin-top:10px;
+  }
+  #table .mini-card{
+    transform:none!important;
+    margin-top:4px!important;
+    max-width:100%!important;
+  }
+  #table .mini-card .playing-card{
+    width:50px!important;
+    min-width:50px!important;
+    height:78px!important;
+    padding:4px!important;
+    border-radius:10px!important;
+  }
+  #table .mini-card .playing-card .rank{
+    font-size:15px!important;
+  }
+  #table .mini-card .playing-card .suit{
+    font-size:10px!important;
+  }
+  #table .mini-card .playing-card .art{
+    font-size:20px!important;
+  }
+  #table .mini-card .madpig-banner,
+  #table .mini-card .danger-chip{
+    display:none!important;
+  }
+
+  #table .seat-arrow,
+  #table .seat-0 .seat-arrow,
+  #table .seat-1 .seat-arrow,
+  #table .seat-2 .seat-arrow,
+  #table .seat-3 .seat-arrow{
+    position:absolute!important;
+    left:auto!important;
+    top:auto!important;
+    right:5px!important;
+    bottom:5px!important;
+    transform:none!important;
+    max-width:calc(100% - 10px)!important;
+    min-width:0!important;
+    height:auto!important;
+    padding:3px 6px!important;
+    border-radius:999px!important;
+    font-size:10px!important;
+    line-height:1.1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    z-index:3;
+  }
+  #table .seat-arrow.current-next{
+    background:#fff6c8!important;
+    border-color:#d4a536!important;
+    box-shadow:none!important;
+  }
+
+  #message.message{
+    font-size:15px!important;
+    line-height:1.45!important;
+    padding:10px 12px!important;
+    border-radius:14px!important;
+    margin-top:8px!important;
+    word-break:break-word;
+  }
+  .tip{
+    font-size:12px!important;
+    line-height:1.45!important;
+    padding:8px 10px!important;
+    margin-top:6px!important;
+  }
+  .hand{
+    padding-bottom:calc(14px + env(safe-area-inset-bottom))!important;
+  }
+}
+@media (max-width: 380px) and (orientation: portrait){
+  #table .seat{
+    min-height:112px!important;
+    padding-bottom:25px!important;
+  }
+  #table .who{
+    font-size:10px!important;
+  }
+  #table .mini-card .playing-card{
+    width:46px!important;
+    min-width:46px!important;
+    height:72px!important;
+  }
+  #table .turn-order-bar .ord,
+  #table .play-trail .trail-step{
+    max-width:104px;
+    font-size:10px!important;
+  }
+}
+
+
+/* --- PICK対象ラベル位置修正 --- */
+.seat.pick-target,
+.seat.is-pick-target,
+.seat.pick-weakest,
+.seat.pending-pick-target{
+  position:relative;
+}
+.seat.pick-target::before,
+.seat.is-pick-target::before,
+.seat.pick-weakest::before,
+.seat.pending-pick-target::before{
+  left:auto!important;
+  right:10px!important;
+  top:-12px!important;
+  transform:none!important;
+}
+@media (max-width: 640px){
+  .seat.pick-target::before,
+  .seat.is-pick-target::before,
+  .seat.pick-weakest::before,
+  .seat.pending-pick-target::before{
+    right:8px!important;
+    left:auto!important;
+    top:-10px!important;
+    font-size:10px!important;
+    padding:4px 8px!important;
+    max-width:calc(100% - 16px);
+    white-space:nowrap;
+  }
+}
+
+
+/* --- 端末別レスポンシブ総合ブラッシュアップ --- */
+:root{
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* 共通：横はみ出しを根本的に抑制 */
+html,body{
+  max-width:100%;
+  overflow-x:hidden;
+}
+*{
+  box-sizing:border-box;
+}
+img,svg,canvas{
+  max-width:100%;
+}
+
+/* 演出は残すが、レイアウトを壊す大移動アニメは抑える */
+.ui-touch .seat.has-card .mini-card,
+.ui-touch .review-banner,
+.ui-touch .play-trail .trail-step.current,
+.ui-touch .pick-big-arrow{
+  animation:none!important;
+}
+.ui-touch .seat.current{
+  animation:none!important;
+  box-shadow:0 0 0 3px rgba(255,212,59,.35),0 0 18px rgba(212,165,54,.16)!important;
+}
+.ui-touch .hype-toast{
+  animation:toastIn .22s ease-out forwards;
+}
+
+/* PC：情報量を活かし、卓面は広く */
+body.ui-desktop #app{
+  max-width:1180px;
+}
+body.ui-desktop .players{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+body.ui-desktop #table{
+  overflow:visible;
+}
+body.ui-desktop #table .table-board{
+  min-width:0!important;
+  grid-template-columns:minmax(0,1fr) 128px minmax(0,1fr);
+}
+body.ui-desktop #table .seat{
+  min-height:182px;
+}
+body.ui-desktop #table .mini-card .playing-card{
+  width:72px;
+  min-width:72px;
+  height:110px;
+}
+
+/* タブレット/Android横など：PC寄りだが少し圧縮 */
+body.ui-tablet #app{
+  max-width:1000px;
+  padding-left:14px;
+  padding-right:14px;
+}
+body.ui-tablet .players{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+body.ui-tablet #table{
+  overflow:hidden;
+}
+body.ui-tablet #table .table-board{
+  min-width:0!important;
+  grid-template-columns:minmax(0,1fr) 104px minmax(0,1fr);
+  gap:10px;
+}
+body.ui-tablet #table .seat{
+  min-height:156px;
+  padding:10px 8px 28px;
+}
+body.ui-tablet #table .center-wheel{
+  width:104px;
+  height:104px;
+}
+body.ui-tablet #table .mini-card .playing-card{
+  width:60px;
+  min-width:60px;
+  height:92px;
+}
+body.ui-tablet #table .seat-arrow{
+  right:6px!important;
+  bottom:6px!important;
+  left:auto!important;
+  top:auto!important;
+  transform:none!important;
+}
+
+/* スマホ共通：まず上部を圧縮して場を主役に */
+body.ui-phone{
+  width:100%;
+  min-width:0;
+  background:#fff6e8;
+  padding-left:var(--safe-left);
+  padding-right:var(--safe-right);
+}
+body.ui-phone #app{
+  width:100%;
+  max-width:100vw;
+  padding:6px 6px calc(96px + var(--safe-bottom))!important;
+  overflow-x:hidden;
+}
+body.ui-phone .hero{
+  padding:10px 9px!important;
+  border-radius:16px!important;
+}
+body.ui-phone .hero h1{
+  font-size:20px!important;
+  line-height:1.22!important;
+}
+body.ui-phone .hero p{
+  font-size:11px!important;
+}
+body.ui-phone .cardbox{
+  width:100%;
+  max-width:100%;
+  overflow:hidden;
+  padding:10px!important;
+  margin:8px 0!important;
+  border-radius:16px!important;
+}
+body.ui-phone .cardbox > h2{
+  font-size:18px!important;
+  margin:0 0 6px!important;
+}
+body.ui-phone .status{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+body.ui-phone .status div{
+  padding:7px 6px!important;
+  border-radius:12px!important;
+}
+body.ui-phone .status b{
+  font-size:14px!important;
+  line-height:1.25!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+body.ui-phone .round-status{
+  padding:7px 6px!important;
+  margin-top:6px!important;
+  border-radius:14px!important;
+}
+body.ui-phone .round-status .round-big{
+  font-size:16px!important;
+}
+body.ui-phone .setting-chips{
+  gap:4px!important;
+  justify-content:flex-start!important;
+}
+body.ui-phone .setting-chips span{
+  font-size:9.5px!important;
+  padding:3px 6px!important;
+}
+
+/* スマホのプレイヤー欄は2列。縦に長すぎるのを防ぐ */
+body.ui-phone .players{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+body.ui-phone .player{
+  min-height:82px!important;
+  padding:8px 6px!important;
+}
+body.ui-phone .player .pig .cpu-avatar-img,
+body.ui-phone .player .pig{
+  width:34px!important;
+  height:34px!important;
+  font-size:24px!important;
+}
+body.ui-phone .player .name{
+  font-size:12px!important;
+  line-height:1.2!important;
+}
+body.ui-phone .player-stats{
+  gap:3px!important;
+  margin-top:4px!important;
+}
+body.ui-phone .player-stats span{
+  font-size:10px!important;
+  padding:2px 5px!important;
+}
+body.ui-phone .player-speech{
+  display:none!important;
+}
+
+/* スマホ卓面：横スクロール禁止。中央パネル+2x2座席 */
+body.ui-phone #table{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  padding:6px!important;
+  border-radius:14px!important;
+}
+body.ui-phone #table *{
+  max-width:100%;
+}
+body.ui-phone #table .turn-order-bar{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  justify-content:center!important;
+  gap:5px!important;
+  padding:6px!important;
+  margin:0 0 6px!important;
+  border-radius:12px!important;
+  white-space:normal!important;
+  overflow:hidden!important;
+}
+body.ui-phone #table .turn-order-bar .small{
+  width:100%;
+  text-align:center;
+  font-size:10px!important;
+}
+body.ui-phone #table .turn-order-bar .ord{
+  padding:4px 6px!important;
+  font-size:11px!important;
+  max-width:132px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+body.ui-phone #table .turn-order-bar .arrowtxt{
+  font-size:11px!important;
+}
+body.ui-phone #table .play-trail{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  justify-content:center!important;
+  gap:4px!important;
+  padding:6px!important;
+  margin:0 0 6px!important;
+  border-radius:12px!important;
+  white-space:normal!important;
+  overflow:hidden!important;
+}
+body.ui-phone #table .play-trail .trail-step{
+  font-size:10.5px!important;
+  padding:4px 6px!important;
+  max-width:126px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+body.ui-phone #table .play-trail .trail-arrow{
+  font-size:12px!important;
+}
+body.ui-phone #table .table-board{
+  display:grid!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  grid-template-areas:
+    "mid mid"
+    "p0 p1"
+    "p3 p2"!important;
+  gap:7px!important;
+  overflow:hidden!important;
+}
+body.ui-phone #table .center-wheel{
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:42px!important;
+  border-radius:12px!important;
+  padding:7px 8px!important;
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr)!important;
+  column-gap:8px!important;
+  align-items:center!important;
+  justify-items:start!important;
+  text-align:left!important;
+  box-shadow:none!important;
+}
+body.ui-phone #table .center-wheel .cw-arrow{
+  font-size:18px!important;
+  line-height:1!important;
+  grid-row:1 / span 2;
+}
+body.ui-phone #table .center-wheel > div:nth-child(2){
+  font-size:13px!important;
+  line-height:1.1!important;
+}
+body.ui-phone #table .center-wheel .cw-small{
+  font-size:11px!important;
+  line-height:1.2!important;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+/* スマホ座席：バッジは中に収める */
+body.ui-phone #table .seat{
+  min-width:0!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-height:118px!important;
+  padding:7px 5px 28px!important;
+  border-radius:12px!important;
+  gap:3px!important;
+  overflow:hidden!important;
+}
+body.ui-phone #table .seat.current:before{
+  top:-1px!important;
+  left:8px!important;
+  transform:none!important;
+  font-size:10px!important;
+  padding:2px 7px!important;
+}
+body.ui-phone #table .seat.win:after{
+  top:2px!important;
+  right:5px!important;
+  transform:none!important;
+  font-size:9px!important;
+  padding:2px 6px!important;
+}
+body.ui-phone #table .seat.weak:before{
+  top:2px!important;
+  left:auto!important;
+  right:5px!important;
+  transform:none!important;
+  font-size:9px!important;
+  padding:2px 6px!important;
+  max-width:calc(100% - 10px);
+  white-space:nowrap;
+}
+body.ui-phone #table .who{
+  width:100%!important;
+  padding:0 4px!important;
+  margin-top:10px!important;
+  font-size:10.5px!important;
+  line-height:1.2!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  text-align:center!important;
+}
+body.ui-phone #table .play-badge{
+  top:4px!important;
+  left:4px!important;
+  font-size:9px!important;
+  padding:1px 5px!important;
+  z-index:4;
+}
+body.ui-phone #table .turn-flag{
+  top:4px!important;
+  right:4px!important;
+  font-size:9px!important;
+  padding:1px 5px!important;
+  z-index:4;
+}
+body.ui-phone #table .mini-card{
+  transform:none!important;
+  margin-top:4px!important;
+  display:flex!important;
+  justify-content:center!important;
+}
+body.ui-phone #table .mini-card .playing-card{
+  width:50px!important;
+  min-width:50px!important;
+  height:78px!important;
+  padding:4px!important;
+  border-radius:10px!important;
+}
+body.ui-phone #table .mini-card .playing-card .rank{
+  font-size:15px!important;
+}
+body.ui-phone #table .mini-card .playing-card .suit{
+  font-size:10px!important;
+}
+body.ui-phone #table .mini-card .playing-card .art{
+  font-size:20px!important;
+}
+body.ui-phone #table .mini-card .madpig-banner,
+body.ui-phone #table .mini-card .danger-chip{
+  display:none!important;
+}
+
+/* 問題の矢印バッジは常に座席内右下 */
+body.ui-phone #table .seat-arrow,
+body.ui-phone #table .seat-0 .seat-arrow,
+body.ui-phone #table .seat-1 .seat-arrow,
+body.ui-phone #table .seat-2 .seat-arrow,
+body.ui-phone #table .seat-3 .seat-arrow{
+  position:absolute!important;
+  left:auto!important;
+  top:auto!important;
+  right:5px!important;
+  bottom:5px!important;
+  transform:none!important;
+  max-width:calc(100% - 10px)!important;
+  padding:3px 6px!important;
+  border-radius:999px!important;
+  font-size:10px!important;
+  line-height:1.1!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  z-index:3;
+}
+body.ui-phone #table .seat-arrow.current-next{
+  background:#fff6c8!important;
+  border-color:#d4a536!important;
+  box-shadow:none!important;
+}
+
+/* メッセージ・ヒント・実況 */
+body.ui-phone #message.message{
+  font-size:15px!important;
+  line-height:1.45!important;
+  padding:10px 12px!important;
+  border-radius:14px!important;
+  margin-top:8px!important;
+  word-break:break-word;
+}
+body.ui-phone .tip{
+  font-size:12px!important;
+  line-height:1.45!important;
+  padding:8px 10px!important;
+  margin-top:6px!important;
+}
+body.ui-phone #tableCommentary .speech-bubble{
+  grid-template-columns:34px minmax(0,1fr);
+}
+body.ui-phone #tableCommentary .commentary-avatar{
+  width:34px!important;
+  height:34px!important;
+}
+body.ui-phone #tableCommentary .speech-body{
+  padding:6px 8px;
+}
+body.ui-phone #tableCommentary .speech-body p{
+  font-size:12px!important;
+  line-height:1.35!important;
+}
+
+/* スマホ手札 */
+body.ui-phone .hand{
+  padding-bottom:calc(14px + var(--safe-bottom))!important;
+}
+body.ui-phone .hand-card .playing-card{
+  width:64px;
+  min-width:64px;
+  height:98px;
+}
+
+/* かなり狭いiPhone/Android */
+@media (max-width:380px){
+  body.ui-phone #table .seat{
+    min-height:112px!important;
+    padding-bottom:25px!important;
+  }
+  body.ui-phone #table .who{
+    font-size:10px!important;
+  }
+  body.ui-phone #table .mini-card .playing-card{
+    width:46px!important;
+    min-width:46px!important;
+    height:72px!important;
+  }
+  body.ui-phone #table .turn-order-bar .ord,
+  body.ui-phone #table .play-trail .trail-step{
+    max-width:104px;
+    font-size:10px!important;
+  }
+}
+
+/* スマホ横向き：縦ほど詰めず、卓面を横長に */
+body.ui-phone-landscape #table .table-board{
+  grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr)!important;
+  grid-template-areas:"p0 mid p1" "p3 mid p2"!important;
+}
+body.ui-phone-landscape #table .center-wheel{
+  width:84px!important;
+  height:auto!important;
+  min-height:100%!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  text-align:center!important;
+}
+body.ui-phone-landscape #table .seat{
+  min-height:108px!important;
+}
+body.ui-phone-landscape #table .mini-card .playing-card{
+  width:48px!important;
+  min-width:48px!important;
+  height:74px!important;
+}
+
 </style>
 </head>
 <body>
@@ -1437,7 +2278,46 @@ function applyResponsiveMode(){
   document.body.classList.toggle('mobile-table-compact', compact);
 }
 window.addEventListener('resize', applyResponsiveMode);
+document.addEventListener('DOMContentLoaded', applyResponsiveMode);
 window.addEventListener('orientationchange', applyResponsiveMode);
+
+
+function fixPickTargetBadgePosition(){
+  try{
+    document.querySelectorAll('.seat.pick-target,.seat.is-pick-target,.seat.pick-weakest,.seat.pending-pick-target').forEach(el=>{
+      el.style.position = 'relative';
+    });
+    document.querySelectorAll('.seat .pick-target-badge, .seat .pick-badge, .seat .pick-target-label').forEach(el=>{
+      el.style.left = 'auto';
+      el.style.right = '8px';
+      el.style.top = '-10px';
+      el.style.transform = 'none';
+      el.style.maxWidth = 'calc(100% - 16px)';
+      el.style.whiteSpace = 'nowrap';
+    });
+  }catch(e){}
+}
+
+
+function applyDeviceUiMode(){
+  const w = window.innerWidth || document.documentElement.clientWidth || 0;
+  const h = window.innerHeight || document.documentElement.clientHeight || 0;
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const noHover = window.matchMedia && window.matchMedia('(hover: none)').matches;
+  const portrait = h >= w;
+  const phone = (w <= 720 && coarse) || (w <= 640);
+  const tablet = !phone && coarse && w <= 1180;
+  document.body.classList.toggle('ui-phone', phone);
+  document.body.classList.toggle('ui-phone-portrait', phone && portrait);
+  document.body.classList.toggle('ui-phone-landscape', phone && !portrait);
+  document.body.classList.toggle('ui-tablet', tablet);
+  document.body.classList.toggle('ui-desktop', !phone && !tablet);
+  document.body.classList.toggle('ui-touch', coarse || noHover);
+  document.body.classList.toggle('mobile-table-compact', phone);
+}
+window.addEventListener('resize', applyDeviceUiMode);
+window.addEventListener('orientationchange', applyDeviceUiMode);
+document.addEventListener('DOMContentLoaded', applyDeviceUiMode);
 
 function hypeToast(text){
   const old=document.querySelector('.hype-toast');
@@ -1794,6 +2674,17 @@ function pickRemainingSeconds(pp){
   const base = pp.clientReadyAt || (Date.now() + Number(pp.readyInMs || 0));
   return Math.max(0, Math.ceil((base - Date.now())/1000));
 }
+
+function normalizeTableBadges(){
+  try{
+    document.querySelectorAll('#table .seat .pick-target-badge, #table .seat .pick-badge, #table .seat .pick-target-label').forEach(el=>{
+      el.style.left='auto';
+      el.style.right='6px';
+      el.style.transform='none';
+    });
+  }catch(e){}
+}
+
 function render(){
   if(!state) return;
   if(state.phase !== 'passing') passSelectedIds = [];
@@ -1806,7 +2697,7 @@ function render(){
   $('start').disabled = !(isHost() && state.phase==='lobby' && state.players.length===4);
   $('addCpu').disabled = !(isHost() && state.phase==='lobby' && state.players.length<4);
   $('removeCpu').disabled = !(isHost() && state.phase==='lobby' && state.players.some(p=>p.cpu));
-  renderRoundStatus(); renderRoundModal(); renderCommentary(); renderPlayers(); renderLastTrick(); renderTable(); renderHand(); renderPick(); renderLog(); renderScore(); hypeByState();
+  renderRoundStatus(); renderRoundModal(); renderCommentary(); renderPlayers(); renderLastTrick(); renderTable(); normalizeTableBadges(); fixPickTargetBadgePosition(); renderHand(); renderPick(); renderLog(); renderScore(); hypeByState();
   if(state.trickReview && state.trickReview.until > Date.now() && !window.__reviewTimer){
     window.__reviewTimer = setInterval(()=>{
       if(!state || !state.trickReview || state.trickReview.until <= Date.now()){
@@ -2431,7 +3322,7 @@ function cardHTML(c, playable=false){
 function esc(s){ return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 function escAttr(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-window.addEventListener('load', ()=>{ const data=loadReconnectInfo(); if(data){ $('code').value=data.code; if(data.name) $('name').value=data.name; } updateReconnectButton(); });
+window.addEventListener('load', ()=>{ applyDeviceUiMode(); const data=loadReconnectInfo(); if(data){ $('code').value=data.code; if(data.name) $('name').value=data.name; } updateReconnectButton(); });
 </script>
 </body>
 </html>
